@@ -28,6 +28,10 @@ final class StationAnnotationView: MKAnnotationView {
             applyCurrentStyle()
         }
     }
+
+    func refreshStyle() {
+        applyCurrentStyle()
+    }
     
     private func setup() {
         canShowCallout = false

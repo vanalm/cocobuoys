@@ -31,6 +31,10 @@ final class WindAnnotationView: MKAnnotationView {
             applyCurrentStyle()
         }
     }
+
+    func refreshStyle() {
+        applyCurrentStyle()
+    }
     
     private func setup() {
         canShowCallout = false
@@ -54,10 +58,12 @@ final class WindAnnotationView: MKAnnotationView {
     }
     
     private func apply(style: WindMarkerStyle) {
-        let baseLength: CGFloat = 28
-        let speed = CGFloat(style.speedKnots ?? 0)
-        let clampedSpeed = min(max(speed, 5), 40)
-        let length = baseLength + (clampedSpeed - 5) * 1.2
+        let baseLength: CGFloat = 26
+        let primary = CGFloat(style.speedKnots ?? style.gustKnots ?? 0)
+        let clampedSpeed = min(max(primary, 5), 35)
+        let normalized = max(min((clampedSpeed - 5) / 30, 1), 0)
+        let eased = CGFloat(pow(Double(normalized), 0.85))
+        let length = baseLength + eased * 34
         let width: CGFloat = 12
         let size = CGSize(width: width, height: length)
         bounds = CGRect(origin: .zero, size: size)

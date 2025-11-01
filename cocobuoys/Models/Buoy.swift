@@ -134,15 +134,7 @@ struct WindMarkerStyle: Hashable {
     var direction: Double?
     var color: Color
     
-    static func color(for speed: Double?) -> Color {
-        guard let speed else { return .gray }
-        switch speed {
-        case ..<10:
-            return .green
-        case 10..<20:
-            return .yellow
-        default:
-            return .red
-        }
+    static func color(speed: Double?, gust: Double?) -> Color {
+        StationColorScale.windGustColor(for: gust ?? speed)
     }
 }

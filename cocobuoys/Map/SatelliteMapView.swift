@@ -108,19 +108,35 @@ extension SatelliteMapView {
         }
         
         func syncAnnotations(_ annotations: [StationAnnotation], on mapView: MKMapView) {
-            let toRemove = currentAnnotations.filter { current in
-                !annotations.contains(where: { $0.identifier == current.identifier })
-            }
-            let toAdd = annotations.filter { incoming in
-                !currentAnnotations.contains(where: { $0.identifier == incoming.identifier })
+            let existingById = Dictionary(uniqueKeysWithValues: currentAnnotations.map { ($0.identifier, $0) })
+            let incomingById = Dictionary(uniqueKeysWithValues: annotations.map { ($0.identifier, $0) })
+            
+            let existingIds = Set(existingById.keys)
+            let incomingIds = Set(incomingById.keys)
+            
+            let idsToRemove = existingIds.subtracting(incomingIds)
+            let idsToAdd = incomingIds.subtracting(existingIds)
+            
+            if !idsToRemove.isEmpty {
+                let annotationsToRemove = idsToRemove.compactMap { existingById[$0] }
+                mapView.removeAnnotations(annotationsToRemove)
             }
             
-            if !toRemove.isEmpty {
-                mapView.removeAnnotations(toRemove)
+            if !idsToAdd.isEmpty {
+                let annotationsToAdd = idsToAdd.compactMap { incomingById[$0] }
+                mapView.addAnnotations(annotationsToAdd)
             }
             
-            if !toAdd.isEmpty {
-                mapView.addAnnotations(toAdd)
+            let idsToRefresh = incomingIds.intersection(existingIds)
+            for identifier in idsToRefresh {
+                guard let incoming = incomingById[identifier],
+                      let existing = existingById[identifier] else { continue }
+                existing.update(with: incoming.station, kind: incoming.kind)
+                if let view = mapView.view(for: existing) as? StationAnnotationView {
+                    view.refreshStyle()
+                } else if let view = mapView.view(for: existing) as? WindAnnotationView {
+                    view.refreshStyle()
+                }
             }
             
             currentAnnotations = annotations

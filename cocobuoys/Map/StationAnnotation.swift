@@ -14,8 +14,8 @@ enum StationAnnotationKind {
 }
 
 final class StationAnnotation: NSObject, MKAnnotation {
-    let station: MarineStation
-    let kind: StationAnnotationKind
+    private(set) var station: MarineStation
+    private(set) var kind: StationAnnotationKind
     let identifier: String
     
     init(station: MarineStation, kind: StationAnnotationKind) {
@@ -39,5 +39,10 @@ final class StationAnnotation: NSObject, MKAnnotation {
     
     var title: String? {
         station.name
+    }
+
+    func update(with station: MarineStation, kind: StationAnnotationKind) {
+        self.station = station
+        self.kind = kind
     }
 }

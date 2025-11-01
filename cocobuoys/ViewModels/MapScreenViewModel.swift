@@ -32,6 +32,21 @@ enum MapBaseLayer: String, CaseIterable, Identifiable {
     }
 }
 
+private extension MKCoordinateRegion {
+    func contains(coordinate: CLLocationCoordinate2D) -> Bool {
+        let latitudeSpan = span.latitudeDelta / 2
+        let longitudeSpan = span.longitudeDelta / 2
+        let minLatitude = center.latitude - latitudeSpan
+        let maxLatitude = center.latitude + latitudeSpan
+        let minLongitude = center.longitude - longitudeSpan
+        let maxLongitude = center.longitude + longitudeSpan
+        return coordinate.latitude >= minLatitude &&
+            coordinate.latitude <= maxLatitude &&
+            coordinate.longitude >= minLongitude &&
+            coordinate.longitude <= maxLongitude
+    }
+}
+
 @MainActor
 final class MapScreenViewModel: ObservableObject {
     private struct CachedHistory {
@@ -39,7 +54,9 @@ final class MapScreenViewModel: ObservableObject {
         var fetchedAt: Date
     }
     
-    @Published var region: MKCoordinateRegion?
+    @Published var region: MKCoordinateRegion? {
+        didSet { updateTimelapseCandidateCount() }
+    }
     @Published private(set) var annotations: [StationAnnotation] = []
     @Published private(set) var authorizationStatus: CLAuthorizationStatus
     @Published private(set) var isLoading = false
@@ -60,14 +77,20 @@ final class MapScreenViewModel: ObservableObject {
     @Published var isTimelapseActive = false {
         didSet {
             if isTimelapseActive {
+                timelapseStations = visibleTimelapseBuoys()
+                timelapseCandidateCount = timelapseStations.count
+                timelapseLoadingCount = timelapseStations.count
                 timelapseLoadingProgress = 0
                 timelapseCurrentDate = nil
                 startTimelapsePreparation()
             } else {
                 historyLoadTask = nil
+                timelapseStations = []
                 timelapseProgress = 1.0
                 timelapseCurrentDate = nil
                 timelapseLoadingProgress = 1
+                timelapseLoadingCount = 0
+                updateTimelapseCandidateCount()
                 rebuildAnnotations()
             }
         }
@@ -80,6 +103,8 @@ final class MapScreenViewModel: ObservableObject {
     }
     @Published private(set) var timelapseCurrentDate: Date?
     @Published private(set) var timelapseLoadingProgress: Double = 1
+    @Published private(set) var timelapseCandidateCount: Int = 0
+    @Published private(set) var timelapseLoadingCount: Int = 0
     
     private let locationManager: LocationManager
     let dataService: NOAANdbcServicing
@@ -93,9 +118,15 @@ final class MapScreenViewModel: ObservableObject {
     private var hasCenteredOnUser = false
     private var historyCache: [String: CachedHistory] = [:]
     private var timelapseRange: ClosedRange<Date>?
+    private var timelapseStations: [Buoy] = []
     private var historyLoadTask: Task<Void, Never>? {
         didSet { oldValue?.cancel() }
     }
+    private var homeSummaryTask: Task<Void, Never>?
+    private var homeSummaryGeneration = 0
+    private let homeChartTargetSampleCount = 32
+    private let homeChartFallbackSpacing: TimeInterval = 1800 // 30 minutes
+    private let homeChartSmoothingWindow = 5
     
     init(
         locationManager: LocationManager = LocationManager(),
@@ -132,7 +163,7 @@ final class MapScreenViewModel: ObservableObject {
         locationManager.$authorizationStatus
             .receive(on: DispatchQueue.main)
             .sink { [weak self] status in
-                guard let self else { return }
+                guard let self = self else { return }
                 authorizationStatus = status
                 switch status {
                 case .authorizedAlways, .authorizedWhenInUse:
@@ -151,7 +182,7 @@ final class MapScreenViewModel: ObservableObject {
             .compactMap { $0 }
             .receive(on: DispatchQueue.main)
             .sink { [weak self] location in
-                guard let self else { return }
+                guard let self = self else { return }
                 centerOnUserIfNeeded(location.coordinate)
                 refreshStationsIfNeeded(near: location)
                 maybePromptForHome(using: location)
@@ -224,26 +255,22 @@ final class MapScreenViewModel: ObservableObject {
             partial[buoy.id] = buoy
         }
         rebuildAnnotations()
+        updateTimelapseCandidateCount()
+        updateHomeSummary()
     }
     
-    private func color(for height: Double?) -> Color {
-        guard let height else { return .gray }
-        switch height {
-        case ..<1:
-            return .green
-        case 1..<2.5:
-            return .yellow
-        default:
-            return .red
-        }
+    private func waveMarkerColor(for period: Double?) -> Color {
+        StationColorScale.wavePeriodColor(for: period)
     }
     
-    private func size(for period: Double?) -> CGFloat {
-        guard let period else { return 12 }
-        let minSize: CGFloat = 12
-        let maxSize: CGFloat = 28
-        let normalized = min(max(period, 5), 20)
-        return minSize + (CGFloat(normalized - 5) / 15) * (maxSize - minSize)
+    private func waveMarkerSize(for height: Double?) -> CGFloat {
+        guard let height else { return 20 }
+        let clamped = min(max(height, 1), 20)
+        let fraction = (clamped - 1) / 19
+        let eased = pow(fraction, 0.8)
+        let base: CGFloat = 18
+        let growth: CGFloat = 36
+        return base + CGFloat(eased) * growth
     }
 
     func confirmHomeLocation() {
@@ -268,6 +295,8 @@ final class MapScreenViewModel: ObservableObject {
         homeLocation = nil
         homeSummary = nil
         pendingHomeLocation = nil
+        homeSummaryTask?.cancel()
+        homeSummaryTask = nil
     }
     
     func requestHomeReassignment() {
@@ -312,7 +341,31 @@ final class MapScreenViewModel: ObservableObject {
         isTimelapseActive.toggle()
     }
     
+    func refreshHomeConditions() {
+        let referenceCoordinate: CLLocationCoordinate2D
+        if let homeLocation {
+            referenceCoordinate = homeLocation
+        } else if let latest = locationManager.latestLocation {
+            referenceCoordinate = latest.coordinate
+        } else if let last = lastFetchedLocation?.coordinate {
+            referenceCoordinate = last
+        } else if let regionCenter = region?.center {
+            referenceCoordinate = regionCenter
+        } else {
+            referenceCoordinate = fallbackCoordinate
+        }
+        lastFetchedLocation = CLLocation(latitude: referenceCoordinate.latitude, longitude: referenceCoordinate.longitude)
+        refreshStations(near: referenceCoordinate)
+    }
+    
     private func startTimelapsePreparation() {
+        if timelapseStations.isEmpty {
+            timelapseRange = nil
+            timelapseLoadingProgress = 1
+            timelapseLoadingCount = 0
+            rebuildAnnotations()
+            return
+        }
         timelapseLoadingProgress = 0
         historyLoadTask = Task {
             await preloadHistoriesIfNeeded()
@@ -324,10 +377,11 @@ final class MapScreenViewModel: ObservableObject {
     }
     
     private func preloadHistoriesIfNeeded() async {
-        let buoys = Array(buoyCache.values)
+        let buoys = timelapseStations
         guard !buoys.isEmpty else {
             await MainActor.run {
                 timelapseLoadingProgress = 1
+                timelapseLoadingCount = 0
                 timelapseRange = nil
             }
             return
@@ -340,6 +394,7 @@ final class MapScreenViewModel: ObservableObject {
         let totalToFetch = idsNeedingFetch.count
         await MainActor.run {
             timelapseLoadingProgress = totalToFetch == 0 ? 1 : 0
+            timelapseLoadingCount = totalToFetch
         }
         var globalMin: Date?
         var globalMax: Date?
@@ -359,9 +414,16 @@ final class MapScreenViewModel: ObservableObject {
                 let progressValue = totalToFetch == 0 ? 1 : Double(completed) / Double(totalToFetch)
                 await MainActor.run {
                     timelapseLoadingProgress = progressValue
+                    timelapseLoadingCount = max(totalToFetch - completed, 0)
                 }
                 try? await Task.sleep(nanoseconds: 200_000_000)
             } catch {
+                completed += 1
+                await MainActor.run {
+                    let progressValue = totalToFetch == 0 ? 1 : Double(completed) / Double(totalToFetch)
+                    timelapseLoadingProgress = progressValue
+                    timelapseLoadingCount = max(totalToFetch - completed, 0)
+                }
                 continue
             }
         }
@@ -377,6 +439,7 @@ final class MapScreenViewModel: ObservableObject {
         }
         await MainActor.run {
             timelapseLoadingProgress = 1
+            timelapseLoadingCount = 0
         }
     }
     
@@ -393,19 +456,36 @@ final class MapScreenViewModel: ObservableObject {
         rebuildAnnotations()
     }
     
+    private func updateTimelapseCandidateCount() {
+        let buoys = Array(buoyCache.values)
+        guard let region else {
+            timelapseCandidateCount = buoys.count
+            return
+        }
+        let visibleCount = buoys.filter { region.contains(coordinate: $0.coordinate) }.count
+        timelapseCandidateCount = visibleCount
+    }
+    
+    private func visibleTimelapseBuoys() -> [Buoy] {
+        let buoys = Array(buoyCache.values)
+        guard let region else { return buoys }
+        return buoys.filter { region.contains(coordinate: $0.coordinate) }
+    }
+    
     private func rebuildAnnotations() {
         let buoys = Array(buoyCache.values)
+        let existingById = Dictionary(uniqueKeysWithValues: annotations.map { ($0.identifier, $0) })
         var newAnnotations: [StationAnnotation] = []
         if showWaveStations {
             for buoy in buoys {
-                if let annotation = waveAnnotation(for: buoy) {
+                if let annotation = waveAnnotation(for: buoy, existing: existingById) {
                     newAnnotations.append(annotation)
                 }
             }
         }
         if showWindStations {
             for buoy in buoys {
-                if let annotation = windAnnotation(for: buoy) {
+                if let annotation = windAnnotation(for: buoy, existing: existingById) {
                     newAnnotations.append(annotation)
                 }
             }
@@ -422,27 +502,37 @@ final class MapScreenViewModel: ObservableObject {
         updateHomeSummary()
     }
     
-    private func waveAnnotation(for buoy: Buoy) -> StationAnnotation? {
+    private func waveAnnotation(for buoy: Buoy, existing: [String: StationAnnotation]) -> StationAnnotation? {
         guard let observation = observation(for: buoy),
               observation.heightFeet != nil || observation.periodSeconds != nil else { return nil }
         let style = BuoyMarkerStyle(
-            color: color(for: observation.heightMeters),
+            color: waveMarkerColor(for: observation.periodSeconds),
             opacity: 0.9,
-            size: size(for: observation.periodSeconds),
+            size: waveMarkerSize(for: observation.heightFeet),
             direction: observation.directionDegrees ?? 0
         )
+        let identifier = "\(buoy.id)-wave"
+        if let annotation = existing[identifier] {
+            annotation.update(with: buoy, kind: .wave(style: style))
+            return annotation
+        }
         return StationAnnotation(station: buoy, kind: .wave(style: style))
     }
     
-    private func windAnnotation(for buoy: Buoy) -> StationAnnotation? {
+    private func windAnnotation(for buoy: Buoy, existing: [String: StationAnnotation]) -> StationAnnotation? {
         guard let observation = observation(for: buoy),
               observation.windSpeedKnots != nil || observation.windGustKnots != nil else { return nil }
         let style = WindMarkerStyle(
             speedKnots: observation.windSpeedKnots,
             gustKnots: observation.windGustKnots,
             direction: observation.windDirectionDegrees,
-            color: WindMarkerStyle.color(for: observation.windSpeedKnots)
+            color: WindMarkerStyle.color(speed: observation.windSpeedKnots, gust: observation.windGustKnots)
         )
+        let identifier = "\(buoy.id)-wind"
+        if let annotation = existing[identifier] {
+            annotation.update(with: buoy, kind: .wind(style: style))
+            return annotation
+        }
         return StationAnnotation(station: buoy, kind: .wind(style: style))
     }
     
@@ -462,28 +552,215 @@ final class MapScreenViewModel: ObservableObject {
     }
     
     private func updateHomeSummary() {
-        guard let homeLocation else {
-            homeSummary = nil
-            return
+        homeSummaryGeneration += 1
+        let generation = homeSummaryGeneration
+        homeSummaryTask = Task { [weak self] in
+            guard let self = self else { return }
+            let summary = await self.buildHomeSummary()
+            if Task.isCancelled { return }
+            await MainActor.run { [weak self] in
+                guard let self = self else { return }
+                guard generation == self.homeSummaryGeneration else { return }
+                self.homeSummary = summary
+            }
         }
+    }
+    
+    private func buildHomeSummary() async -> HomeSummary? {
+        guard let homeLocation else { return nil }
+        if Task.isCancelled { return nil }
         let waveStation = nearestBuoyWithSwell(to: homeLocation)
         let windStation = nearestBuoyWithWind(to: homeLocation)
         if waveStation == nil && windStation == nil {
-            homeSummary = nil
-            return
+            return nil
         }
-        let waveObservation = waveStation?.latestObservation
-        let windObservation = windStation?.latestWindObservation
-        homeSummary = HomeSummary(
+        async let waveHistory = recentHistory(for: waveStation)
+        async let windHistory = recentHistory(for: windStation)
+        let waveObservations = await waveHistory
+        let windObservations = await windHistory
+        if Task.isCancelled { return nil }
+        let waveSamples = makeWaveSamples(from: waveObservations)
+        let windSamples = makeWindSamples(from: windObservations)
+        let waveObservation = waveObservations.last ?? waveStation?.latestObservation
+        let windObservation = windObservations.last ?? windStation?.latestWindObservation
+        return HomeSummary(
             waveStationName: waveStation?.name,
+            waveStationId: waveStation?.id,
             waveHeightFeet: waveObservation?.heightFeet,
             wavePeriodSeconds: waveObservation?.periodSeconds,
             waveDirectionCardinal: waveObservation?.directionCardinal,
+            waveUpdatedAt: waveObservation?.timestamp ?? waveSamples.last?.timestamp,
+            waveSamples: waveSamples,
             windStationName: windStation?.name,
+            windStationId: windStation?.id,
             windSpeedKnots: windObservation?.windSpeedKnots,
             windDirectionCardinal: windObservation?.windDirectionCardinal,
-            windGustKnots: windObservation?.windGustKnots
+            windGustKnots: windObservation?.windGustKnots,
+            windUpdatedAt: windObservation?.timestamp ?? windSamples.last?.timestamp,
+            windSamples: windSamples
         )
+    }
+    
+    private func recentHistory(for station: Buoy?) async -> [BuoyObservation] {
+        guard let station else { return [] }
+        if let cached = historyCache[station.id]?.observations, !cached.isEmpty {
+            return StationHistoryViewModel.recentObservations(from: cached)
+        }
+        do {
+            let history = try await dataService.fetchStationHistory(stationId: station.id)
+            let sorted = history.sorted { $0.timestamp < $1.timestamp }
+            historyCache[station.id] = CachedHistory(observations: sorted, fetchedAt: Date())
+            return StationHistoryViewModel.recentObservations(from: sorted)
+        } catch {
+            historyCache[station.id] = CachedHistory(observations: station.observations, fetchedAt: Date())
+            return StationHistoryViewModel.recentObservations(from: station.observations)
+        }
+    }
+    
+    private func makeWaveSamples(from observations: [BuoyObservation]) -> [HomeSummary.WaveSample] {
+        let usable = observations
+            .filter { $0.heightFeet != nil || $0.periodSeconds != nil }
+        guard !usable.isEmpty else { return [] }
+        let timeline = resampledTimeline(from: usable, desiredCount: homeChartTargetSampleCount, fallbackSpacing: homeChartFallbackSpacing)
+        let heights = timeline.map { interpolatedValue(at: $0, in: usable, keyPath: \.heightFeet) }
+        let periods = timeline.map { interpolatedValue(at: $0, in: usable, keyPath: \.periodSeconds) }
+        let smoothedHeights = smoothSeries(heights, windowSize: homeChartSmoothingWindow)
+        let smoothedPeriods = smoothSeries(periods, windowSize: homeChartSmoothingWindow)
+        var samples: [HomeSummary.WaveSample] = []
+        samples.reserveCapacity(timeline.count)
+        for index in timeline.indices {
+            let sample = HomeSummary.WaveSample(
+                timestamp: timeline[index],
+                heightFeet: smoothedHeights[index],
+                periodSeconds: smoothedPeriods[index]
+            )
+            if sample.heightFeet != nil || sample.periodSeconds != nil {
+                samples.append(sample)
+            }
+        }
+        return samples
+    }
+    
+    private func makeWindSamples(from observations: [BuoyObservation]) -> [HomeSummary.WindSample] {
+        let usable = observations
+            .filter { $0.windSpeedKnots != nil || $0.windGustKnots != nil }
+        guard !usable.isEmpty else { return [] }
+        let timeline = resampledTimeline(from: usable, desiredCount: homeChartTargetSampleCount, fallbackSpacing: homeChartFallbackSpacing)
+        let speeds = timeline.map { interpolatedValue(at: $0, in: usable, keyPath: \.windSpeedKnots) }
+        let gusts = timeline.map { interpolatedValue(at: $0, in: usable, keyPath: \.windGustKnots) }
+        let smoothedSpeeds = smoothSeries(speeds, windowSize: homeChartSmoothingWindow)
+        let smoothedGusts = smoothSeries(gusts, windowSize: homeChartSmoothingWindow)
+        var samples: [HomeSummary.WindSample] = []
+        samples.reserveCapacity(timeline.count)
+        for index in timeline.indices {
+            let sample = HomeSummary.WindSample(
+                timestamp: timeline[index],
+                speedKnots: smoothedSpeeds[index],
+                gustKnots: smoothedGusts[index]
+            )
+            if sample.speedKnots != nil || sample.gustKnots != nil {
+                samples.append(sample)
+            }
+        }
+        return samples
+    }
+    
+    private func resampledTimeline(
+        from observations: [BuoyObservation],
+        desiredCount: Int,
+        fallbackSpacing: TimeInterval
+    ) -> [Date] {
+        let timestamps = observations.map(\.timestamp)
+        let uniqueTimes = Array(Set(timestamps)).sorted()
+        guard !uniqueTimes.isEmpty else {
+            let now = Date()
+            return (0..<desiredCount).map { index in
+                let offset = Double(index - (desiredCount - 1))
+                return now.addingTimeInterval(offset * fallbackSpacing)
+            }
+        }
+        if uniqueTimes.count == 1 {
+            let base = uniqueTimes[0]
+            return (0..<desiredCount).map { index in
+                let offset = Double(index - (desiredCount - 1))
+                return base.addingTimeInterval(offset * fallbackSpacing)
+            }
+        }
+        let count = min(max(desiredCount, uniqueTimes.count), 64)
+        guard let start = uniqueTimes.first, let end = uniqueTimes.last else { return uniqueTimes }
+        let span = end.timeIntervalSince(start)
+        if span < 1 {
+            return (0..<count).map { index in
+                let offset = Double(index - (count - 1))
+                return end.addingTimeInterval(offset * fallbackSpacing)
+            }
+        }
+        return (0..<count).map { index in
+            let fraction = Double(index) / Double(max(count - 1, 1))
+            return start.addingTimeInterval(span * fraction)
+        }
+    }
+    
+    private func interpolatedValue(
+        at timestamp: Date,
+        in observations: [BuoyObservation],
+        keyPath: KeyPath<BuoyObservation, Double?>
+    ) -> Double? {
+        let samples = observations
+            .compactMap { observation -> (Date, Double)? in
+                guard let value = observation[keyPath: keyPath] else { return nil }
+                return (observation.timestamp, value)
+            }
+        guard !samples.isEmpty else { return nil }
+        if samples.count == 1 {
+            return samples[0].1
+        }
+        if timestamp <= samples[0].0 {
+            return samples[0].1
+        }
+        if let last = samples.last, timestamp >= last.0 {
+            return last.1
+        }
+        if let exact = samples.first(where: { $0.0 == timestamp }) {
+            return exact.1
+        }
+        guard let upperIndex = samples.firstIndex(where: { $0.0 > timestamp }), upperIndex > 0 else {
+            return samples.last?.1
+        }
+        let lower = samples[upperIndex - 1]
+        let upper = samples[upperIndex]
+        let totalInterval = upper.0.timeIntervalSince(lower.0)
+        if totalInterval <= 0 {
+            return lower.1
+        }
+        let elapsed = timestamp.timeIntervalSince(lower.0)
+        let fraction = elapsed / totalInterval
+        return lower.1 + (upper.1 - lower.1) * fraction
+    }
+    
+    private func smoothSeries(_ values: [Double?], windowSize: Int) -> [Double?] {
+        guard windowSize > 1 else { return values }
+        let radius = max(1, windowSize / 2)
+        var smoothed = values
+        for index in values.indices {
+            var weightedTotal = 0.0
+            var weightSum = 0.0
+            for offset in -radius...radius {
+                let neighborIndex = index + offset
+                guard neighborIndex >= 0, neighborIndex < values.count else { continue }
+                guard let value = values[neighborIndex] else { continue }
+                let distance = abs(offset)
+                let weight = 1.0 / Double(distance + 1)
+                weightedTotal += value * weight
+                weightSum += weight
+            }
+            if weightSum > 0 {
+                smoothed[index] = weightedTotal / weightSum
+            } else {
+                smoothed[index] = nil
+            }
+        }
+        return smoothed
     }
 
     private func nearestBuoyWithSwell(to coordinate: CLLocationCoordinate2D) -> Buoy? {

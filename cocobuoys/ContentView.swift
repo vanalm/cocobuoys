@@ -10,6 +10,7 @@ import MapKit
 
 struct ContentView: View {
     @StateObject private var viewModel = MapScreenViewModel()
+    @Environment(\.scenePhase) private var scenePhase
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -51,9 +52,20 @@ struct ContentView: View {
                         }
                         Divider()
                         Button {
+                            viewModel.requestHomeReassignment()
+                        } label: {
+                            Label("Change Home Location", systemImage: "scope")
+                        }
+                        Button(role: .destructive) {
+                            viewModel.clearHomeLocation()
+                        } label: {
+                            Label("Clear Home Location", systemImage: "trash")
+                        }
+                        Divider()
+                        Button {
                             viewModel.toggleTimelapseMode()
                         } label: {
-                            Label(viewModel.isTimelapseActive ? "Disable Timelapse" : "Enable Timelapse", systemImage: "clock.arrow.circlepath")
+                            Label("\(viewModel.isTimelapseActive ? "Disable Timelapse" : "Enable Timelapse") (\(viewModel.timelapseCandidateCount))", systemImage: "clock.arrow.circlepath")
                         }
                     } label: {
                         Image(systemName: "slider.horizontal.3")
@@ -61,16 +73,19 @@ struct ContentView: View {
                             .padding(10)
                             .background(.thinMaterial, in: Circle())
                     }
-                    Menu {
-                        Button {
-                            if viewModel.isHomeBannerCollapsed {
-                                viewModel.expandHomeSummary()
-                            } else {
-                                viewModel.collapseHomeSummary()
-                            }
-                        } label: {
-                            Label(viewModel.isHomeBannerCollapsed ? "Show Home Conditions" : "Hide Home Conditions", systemImage: "house")
+                    Button {
+                        if viewModel.isHomeBannerCollapsed {
+                            viewModel.expandHomeSummary()
+                        } else {
+                            viewModel.collapseHomeSummary()
                         }
+                    } label: {
+                        Image(systemName: viewModel.isHomeBannerCollapsed ? "house" : "house.fill")
+                            .symbolRenderingMode(.hierarchical)
+                            .padding(10)
+                            .background(.thinMaterial, in: Circle())
+                    }
+                    Menu {
                         ForEach(MapBaseLayer.allCases) { style in
                             Button {
                                 viewModel.select(mapStyle: style)
@@ -97,7 +112,7 @@ struct ContentView: View {
                     HomeSummaryBanner(
                         summary: summary,
                         onUpdate: {
-                            viewModel.requestHomeReassignment()
+                            viewModel.refreshHomeConditions()
                         },
                         onClear: {
                             viewModel.clearHomeLocation()
@@ -105,6 +120,9 @@ struct ContentView: View {
                         onTitleTap: {
                             viewModel.expandHomeSummary()
                             viewModel.openHomeGraph()
+                        },
+                        onClose: {
+                            viewModel.collapseHomeSummary()
                         }
                     )
                     .padding(.horizontal)
@@ -167,11 +185,17 @@ struct ContentView: View {
                     progress: $viewModel.timelapseProgress,
                     currentDate: viewModel.timelapseCurrentDate,
                     loadingProgress: viewModel.timelapseLoadingProgress,
+                    loadingCount: viewModel.timelapseLoadingCount,
                     onClose: { viewModel.toggleTimelapseMode() }
                 )
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .onChange(of: scenePhase) {
+            if scenePhase == .active {
+                viewModel.refreshHomeConditions()
             }
         }
     }

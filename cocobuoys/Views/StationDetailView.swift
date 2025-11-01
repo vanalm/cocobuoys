@@ -48,7 +48,7 @@ struct StationDetailView: View {
             .padding(20)
             .task {
                 await viewModel.load()
-                refreshTimeDomain()
+                refreshTimeDomain(resetVisible: true)
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -56,7 +56,10 @@ struct StationDetailView: View {
                 }
             }
             .onReceive(viewModel.$history) { _ in
-                refreshTimeDomain()
+                refreshTimeDomain(resetVisible: true)
+            }
+            .onChange(of: viewModel.selectedMetrics) { _ in
+                refreshTimeDomain(resetVisible: true)
             }
         }
         .presentationDetents([.large, .fraction(0.6)])
@@ -174,15 +177,22 @@ struct StationDetailView: View {
     
     private var chartView: some View {
         let metrics = viewModel.selectedMetrics
-        let history = viewModel.history
-        let timeDomain = visibleDomain ?? defaultDomain ?? fallbackTimeDomain()
-        return ZStack {
-            if shouldCombineWindAxes(metrics: metrics, history: history) {
-                combinedWindChart(metrics: metrics, xDomain: timeDomain, history: history)
+        let history = filteredHistory(for: metrics, history: viewModel.history)
+        guard !history.isEmpty else {
+            return AnyView(emptyChartPlaceholder)
+        }
+        let tickDates = axisTickDates(for: history)
+        let timeDomain = visibleDomain ?? defaultDomain ?? domainForDates(tickDates) ?? fallbackTimeDomain()
+        DispatchQueue.main.async {
+            ensureSelectionValid(within: history)
+        }
+        let content = ZStack {
+            if shouldCombineWindAxes(metrics: metrics) {
+                combinedWindChart(metrics: metrics, xDomain: timeDomain, history: history, tickDates: tickDates)
             } else {
                 if let primary = metrics.first,
                    let primaryDomain = domain(for: primary, history: history) {
-                    primarySeriesChart(metric: primary, yDomain: primaryDomain, xDomain: timeDomain, history: history)
+                    primarySeriesChart(metric: primary, yDomain: primaryDomain, xDomain: timeDomain, history: history, tickDates: tickDates)
                 }
                 if metrics.count > 1,
                    let secondaryDomain = domain(for: metrics[1], history: history) {
@@ -190,7 +200,14 @@ struct StationDetailView: View {
                 }
             }
         }
-        .frame(height: 240)
+        return AnyView(content.frame(height: 240))
+    }
+    
+    private var emptyChartPlaceholder: some View {
+        Text("No matching data for the selected metrics.")
+            .frame(maxWidth: .infinity, minHeight: 160)
+            .padding()
+            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16))
     }
     
     private func domain(for metric: StationMetric, history: [BuoyObservation]) -> ClosedRange<Double>? {
@@ -212,7 +229,7 @@ struct StationDetailView: View {
         return lower...upper
     }
     
-    private func shouldCombineWindAxes(metrics: [StationMetric], history: [BuoyObservation]) -> Bool {
+    private func shouldCombineWindAxes(metrics: [StationMetric]) -> Bool {
         let set = Set(metrics)
         return set.contains(.windSpeed) && set.contains(.windGust) && metrics.count <= 2
     }
@@ -238,7 +255,7 @@ struct StationDetailView: View {
     }
     
     @ViewBuilder
-    private func primarySeriesChart(metric: StationMetric, yDomain: ClosedRange<Double>, xDomain: ClosedRange<Date>, history: [BuoyObservation]) -> some View {
+    private func primarySeriesChart(metric: StationMetric, yDomain: ClosedRange<Double>, xDomain: ClosedRange<Date>, history: [BuoyObservation], tickDates: [Date]) -> some View {
         Chart {
             ForEach(history, id: \.id) { observation in
                 if let value = metric.value(for: observation) {
@@ -268,6 +285,17 @@ struct StationDetailView: View {
         .chartYScale(domain: yDomain)
         .chartYAxis {
             AxisMarks(position: .leading)
+        }
+        .chartXAxis {
+            AxisMarks(values: tickDates) { value in
+                AxisGridLine()
+                AxisTick()
+                AxisValueLabel {
+                    if let date = value.as(Date.self) {
+                        Text(formattedAxisLabel(for: date))
+                    }
+                }
+            }
         }
         .chartLegend(.hidden)
         .chartPlotStyle { plotArea in
@@ -318,7 +346,7 @@ struct StationDetailView: View {
     }
     
     @ViewBuilder
-    private func combinedWindChart(metrics: [StationMetric], xDomain: ClosedRange<Date>, history: [BuoyObservation]) -> some View {
+    private func combinedWindChart(metrics: [StationMetric], xDomain: ClosedRange<Date>, history: [BuoyObservation], tickDates: [Date]) -> some View {
         let domainMetrics = metrics.filter { $0 == .windSpeed || $0 == .windGust }
         if let yDomain = combinedDomain(for: domainMetrics, history: history) {
             Chart {
@@ -358,6 +386,17 @@ struct StationDetailView: View {
             .chartYAxis {
                 AxisMarks(position: .leading)
             }
+            .chartXAxis {
+                AxisMarks(values: tickDates) { value in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel {
+                        if let date = value.as(Date.self) {
+                            Text(formattedAxisLabel(for: date))
+                        }
+                    }
+                }
+            }
             .chartPlotStyle { plotArea in
                 plotArea.background(.clear)
             }
@@ -394,7 +433,7 @@ struct StationDetailView: View {
     }
     
     private func handleZoom(scale: CGFloat) {
-        guard var domain = visibleDomain ?? defaultDomain ?? initialTimeDomain() else { return }
+        guard var domain = visibleDomain ?? defaultDomain ?? currentDefaultDomain() else { return }
         guard scale.isFinite, scale > 0 else { return }
         let factor = scale / lastScale
         lastScale = scale
@@ -417,7 +456,7 @@ struct StationDetailView: View {
     
     private func handlePan(translation: CGFloat, plotWidth: CGFloat) {
         guard plotWidth > 0 else { return }
-        guard let base = panStartDomain ?? visibleDomain ?? defaultDomain ?? initialTimeDomain() else { return }
+        guard let base = panStartDomain ?? visibleDomain ?? defaultDomain ?? currentDefaultDomain() else { return }
         let span = base.upperBound.timeIntervalSince(base.lowerBound)
         guard span > 0 else { return }
         let fraction = Double(translation / plotWidth)
@@ -453,14 +492,12 @@ struct StationDetailView: View {
         return lower...upper
     }
     
-    private func initialTimeDomain() -> ClosedRange<Date>? {
-        let timestamps = viewModel.history.map { $0.timestamp }
-        guard let minDate = timestamps.min(), let maxDate = timestamps.max(), minDate <= maxDate else { return nil }
-        let span = maxDate.timeIntervalSince(minDate)
-        let padding = span == 0 ? 3600 : span * 0.1
-        let lower = minDate.addingTimeInterval(-padding)
-        let upper = maxDate.addingTimeInterval(padding)
-        return lower...upper
+    private func currentDefaultDomain() -> ClosedRange<Date>? {
+        if let defaultDomain {
+            return defaultDomain
+        }
+        let history = filteredHistory(for: viewModel.selectedMetrics, history: viewModel.history)
+        return domainForDates(history.map(\.timestamp))
     }
     
     private func fallbackTimeDomain() -> ClosedRange<Date> {
@@ -468,10 +505,20 @@ struct StationDetailView: View {
         return now.addingTimeInterval(-3600)...now
     }
     
-    private func refreshTimeDomain() {
-        let domain = initialTimeDomain()
+    private func refreshTimeDomain(resetVisible: Bool) {
+        let history = filteredHistory(for: viewModel.selectedMetrics, history: viewModel.history)
+        let dates = history.map(\.timestamp)
+        guard let domain = domainForDates(dates) else {
+            defaultDomain = nil
+            visibleDomain = nil
+            return
+        }
         defaultDomain = domain
-        visibleDomain = domain
+        if resetVisible || visibleDomain == nil {
+            visibleDomain = domain
+        } else if let current = visibleDomain {
+            visibleDomain = clampDomain(current)
+        }
     }
     
     @ViewBuilder
@@ -518,7 +565,7 @@ struct StationDetailView: View {
         if unit == "s" {
             return String(format: "%.1f %@", value, unit)
         } else if unit == "°F" {
-            return String(format: "%.1f%@", value, unit)
+            return String(format: "%.1f %@", value, unit)
         } else if unit == "mb" {
             return String(format: "%.0f %@", value, unit)
         }
@@ -538,6 +585,67 @@ struct StationDetailView: View {
         formatter.timeStyle = .short
         return formatter.string(from: date)
     }
+    
+    private func formattedAxisLabel(for date: Date) -> String {
+        if Calendar.current.isDateInToday(date) {
+            return date.formatted(.dateTime.hour().minute())
+        }
+        return date.formatted(.dateTime.month().day().hour().minute())
+    }
+    
+    private func filteredHistory(for metrics: [StationMetric], history: [BuoyObservation]) -> [BuoyObservation] {
+        guard !metrics.isEmpty else { return history }
+        return history.filter { observation in
+            metrics.contains { $0.value(for: observation) != nil }
+        }
+    }
+    
+    private func axisTickDates(for history: [BuoyObservation]) -> [Date] {
+        var seen = Set<Date>()
+        var ordered: [Date] = []
+        for observation in history {
+            let timestamp = observation.timestamp
+            if !seen.contains(timestamp) {
+                seen.insert(timestamp)
+                ordered.append(timestamp)
+            }
+        }
+        guard ordered.count > maxAxisTickCount else { return ordered }
+        let stride = max(1, ordered.count / maxAxisTickCount)
+        var sampled: [Date] = []
+        for (index, date) in ordered.enumerated() where index % stride == 0 {
+            sampled.append(date)
+        }
+        if let last = ordered.last, sampled.last != last {
+            sampled.append(last)
+        }
+        return sampled
+    }
+    
+    private func domainForDates(_ dates: [Date]) -> ClosedRange<Date>? {
+        guard let minDate = dates.min(), let maxDate = dates.max(), minDate <= maxDate else { return nil }
+        let span = maxDate.timeIntervalSince(minDate)
+        let padding = span == 0 ? 900 : max(span * 0.1, 600)
+        let lower = minDate.addingTimeInterval(-padding)
+        let upper = maxDate.addingTimeInterval(padding)
+        return lower...upper
+    }
+    
+    private func ensureSelectionValid(within history: [BuoyObservation]) {
+        guard !history.isEmpty else { return }
+        if let selected = viewModel.selectedObservation,
+           history.contains(where: { $0.id == selected.id }) {
+            return
+        }
+        if let current = viewModel.selectedObservation,
+           !history.contains(where: { $0.id == current.id }) {
+            viewModel.selectedObservation = history.last
+        } else if viewModel.selectedObservation == nil {
+            viewModel.selectedObservation = history.last
+        }
+    }
+    
+    private var maxAxisTickCount: Int { 12 }
 }
 
 #Preview {

@@ -11,6 +11,7 @@ struct TimelapseControlView: View {
     @Binding var progress: Double
     let currentDate: Date?
     let loadingProgress: Double
+    let loadingCount: Int
     var onClose: () -> Void
     
     private var isLoading: Bool {
@@ -31,7 +32,7 @@ struct TimelapseControlView: View {
                 }
             }
             if isLoading {
-                Text("Loading station history…")
+                Text(loadingStatusText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 ProgressView(value: loadingProgress)
@@ -59,10 +60,18 @@ struct TimelapseControlView: View {
         formatter.timeStyle = .short
         return formatter
     }
+    
+    private var loadingStatusText: String {
+        guard loadingCount > 0 else {
+            return "Loading station history…"
+        }
+        let noun = loadingCount == 1 ? "buoy" : "buoys"
+        return "Loading history for \(loadingCount) \(noun)…"
+    }
 }
 
 #Preview {
-    TimelapseControlView(progress: .constant(0.5), currentDate: Date(), loadingProgress: 0.5, onClose: {})
+    TimelapseControlView(progress: .constant(0.5), currentDate: Date(), loadingProgress: 0.5, loadingCount: 3, onClose: {})
         .padding()
         .background(Color.black.opacity(0.1))
 }

@@ -120,12 +120,26 @@ final class StationHistoryViewModel: ObservableObject {
                 selectedMetrics.removeFirst()
             }
         }
+        ensureSelectedObservationValid()
+    }
+    
+    static func recentObservations(
+        from observations: [BuoyObservation],
+        hours: Double = 24,
+        minimumCount: Int = 8
+    ) -> [BuoyObservation] {
+        guard !observations.isEmpty else { return observations }
+        let cutoff = Date().addingTimeInterval(-hours * 3600)
+        let filtered = observations.filter { $0.timestamp >= cutoff }
+        if filtered.count >= minimumCount {
+            return filtered
+        }
+        let lastSamples = Array(observations.suffix(max(minimumCount, filtered.count)))
+        return lastSamples.isEmpty ? observations : lastSamples
     }
     
     private func applyHistory(_ observations: [BuoyObservation]) {
-        let cutoff = Date().addingTimeInterval(-24 * 3600)
-        let filtered = observations.filter { $0.timestamp >= cutoff }
-        history = filtered.isEmpty ? observations : filtered
+        history = Self.recentObservations(from: observations)
         availableMetrics = StationMetric.allCases.filter { metric in
             history.contains { metric.value(for: $0) != nil }
         }
@@ -137,16 +151,13 @@ final class StationHistoryViewModel: ObservableObject {
                 selectedMetrics = Array(availableMetrics.prefix(maxMetrics))
             }
         }
-        if selectedObservation == nil {
-            selectedObservation = history.last
-        } else if let current = selectedObservation,
-                  !history.contains(where: { $0.id == current.id }) {
-            selectedObservation = history.last
-        }
+        ensureSelectedObservationValid()
     }
     
     func nearestObservation(to date: Date) -> BuoyObservation? {
-        history.min { lhs, rhs in
+        let pool = filteredHistoryForSelection()
+        guard !pool.isEmpty else { return nil }
+        return pool.min { lhs, rhs in
             abs(lhs.timestamp.timeIntervalSince(date)) < abs(rhs.timestamp.timeIntervalSince(date))
         }
     }
@@ -157,5 +168,25 @@ final class StationHistoryViewModel: ObservableObject {
     
     func clearSelection() {
         selectedObservation = nil
+    }
+    
+    private func filteredHistoryForSelection() -> [BuoyObservation] {
+        guard !selectedMetrics.isEmpty else { return history }
+        return history.filter { observation in
+            selectedMetrics.contains { $0.value(for: observation) != nil }
+        }
+    }
+    
+    private func ensureSelectedObservationValid() {
+        let pool = filteredHistoryForSelection()
+        guard !pool.isEmpty else {
+            selectedObservation = nil
+            return
+        }
+        if let current = selectedObservation,
+           pool.contains(where: { $0.id == current.id }) {
+            return
+        }
+        selectedObservation = pool.last
     }
 }
