@@ -264,6 +264,8 @@ struct AlertsSignupView: View {
     @State private var selectedStationIds: Set<String>
     @State private var thresholds = AlertThresholdSelection()
     @State private var isSubmitting = false
+    @State private var isLoadingSubscriptions = false
+    @State private var existingSubscriptions: [AlertsSubscription] = []
     @State private var errorMessage: String?
     @State private var statusMessage: String?
     @Environment(\.dismiss) private var dismiss
@@ -300,7 +302,7 @@ struct AlertsSignupView: View {
                     Section("Stations") {
                         ForEach(stations) { station in
                             Toggle(station.name, isOn: bindingForStation(station.id))
-                                .disabled(isSubmitting)
+                                .disabled(isSubmitting || isLoadingSubscriptions)
                         }
                     }
                 } else if let station = stations.first {
@@ -309,9 +311,26 @@ struct AlertsSignupView: View {
                     }
                 }
 
+                if !existingSubscriptions.isEmpty {
+                    Section("Current subscriptions") {
+                        ForEach(existingSubscriptions) { subscription in
+                            HStack {
+                                Text(subscription.stationId)
+                                Spacer()
+                                Button(role: .destructive) {
+                                    Task { await unsubscribe(stationId: subscription.stationId) }
+                                } label: {
+                                    Image(systemName: "bell.slash")
+                                }
+                                .disabled(isSubmitting || isLoadingSubscriptions)
+                            }
+                        }
+                    }
+                }
+
                 Section("Thresholds") {
                     Toggle("Alert on period", isOn: $thresholds.usePeriod)
-                        .disabled(isSubmitting)
+                        .disabled(isSubmitting || isLoadingSubscriptions)
                     HStack {
                         Text("Period threshold")
                         Spacer()
@@ -319,9 +338,9 @@ struct AlertsSignupView: View {
                             .foregroundStyle(.secondary)
                     }
                     Slider(value: $thresholds.periodSeconds, in: 5...30, step: 1)
-                        .disabled(isSubmitting || !thresholds.usePeriod)
+                        .disabled(isSubmitting || isLoadingSubscriptions || !thresholds.usePeriod)
                     Toggle("Alert on wave height", isOn: $thresholds.useWaveHeight)
-                        .disabled(isSubmitting)
+                        .disabled(isSubmitting || isLoadingSubscriptions)
                     HStack {
                         Text("Wave height")
                         Spacer()
@@ -329,14 +348,19 @@ struct AlertsSignupView: View {
                             .foregroundStyle(.secondary)
                     }
                     Slider(value: $thresholds.waveHeightFeet, in: 1...20, step: 0.5)
-                        .disabled(isSubmitting || !thresholds.useWaveHeight)
+                        .disabled(isSubmitting || isLoadingSubscriptions || !thresholds.useWaveHeight)
                 }
 
                 Section {
-                    Button("Subscribe") {
+                    Button("Save Alerts") {
                         Task { await subscribe() }
                     }
-                    .disabled(isSubmitting || selectedStationIds.isEmpty || !(thresholds.usePeriod || thresholds.useWaveHeight))
+                    .disabled(
+                        isSubmitting ||
+                        isLoadingSubscriptions ||
+                        selectedStationIds.isEmpty ||
+                        !(thresholds.usePeriod || thresholds.useWaveHeight)
+                    )
                 }
 
                 if let statusMessage {
@@ -359,8 +383,11 @@ struct AlertsSignupView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Done") { dismiss() }
-                        .disabled(isSubmitting)
+                        .disabled(isSubmitting || isLoadingSubscriptions)
                 }
+            }
+            .task {
+                await loadSubscriptions()
             }
         }
     }
@@ -399,10 +426,15 @@ struct AlertsSignupView: View {
         statusMessage = nil
         let service = AlertsService()
         do {
-            for station in targetStations {
+            let currentIds = Set(existingSubscriptions.map(\.stationId))
+            let scopeIds = Set(stations.map(\.id))
+            let addIds = selectedStationIds.subtracting(currentIds)
+            let removeIds = currentIds.intersection(scopeIds).subtracting(selectedStationIds)
+
+            for stationId in addIds {
                 try await service.subscribe(
                     deviceToken: token,
-                    stationId: station.id,
+                    stationId: stationId,
                     minPeriod: thresholds.usePeriod ? Int(thresholds.periodSeconds.rounded()) : nil,
                     usePeriod: thresholds.usePeriod,
                     periodSeconds: thresholds.periodSeconds,
@@ -410,11 +442,57 @@ struct AlertsSignupView: View {
                     waveHeightFeet: thresholds.waveHeightFeet
                 )
             }
-            statusMessage = "Subscribed to \(targetStations.count) station\(targetStations.count == 1 ? "" : "s")."
+
+            for stationId in removeIds {
+                try await service.unsubscribe(deviceToken: token, stationId: stationId)
+            }
+
+            await loadSubscriptions(allowWhileLoading: true)
+            statusMessage = "Alerts updated."
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
         isSubmitting = false
+    }
+
+    private func unsubscribe(stationId: String) async {
+        guard !isSubmitting else { return }
+        guard let token = PushManager.shared.deviceToken else {
+            errorMessage = "Enable alerts to get a device token first."
+            return
+        }
+        isSubmitting = true
+        errorMessage = nil
+        let service = AlertsService()
+        do {
+            try await service.unsubscribe(deviceToken: token, stationId: stationId)
+            selectedStationIds.remove(stationId)
+            await loadSubscriptions(allowWhileLoading: true)
+            statusMessage = "Removed \(stationId)."
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+        isSubmitting = false
+    }
+
+    private func loadSubscriptions(allowWhileLoading: Bool = false) async {
+        guard let token = PushManager.shared.deviceToken else {
+            existingSubscriptions = []
+            return
+        }
+        guard !isLoadingSubscriptions || allowWhileLoading else { return }
+        isLoadingSubscriptions = true
+        let service = AlertsService()
+        do {
+            let subscriptions = try await service.fetchSubscriptions(deviceToken: token)
+            existingSubscriptions = subscriptions
+            let subscriptionIds = Set(subscriptions.map(\.stationId))
+            let inScope = Set(stations.map(\.id))
+            selectedStationIds.formUnion(subscriptionIds.intersection(inScope))
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+        isLoadingSubscriptions = false
     }
 }
 
