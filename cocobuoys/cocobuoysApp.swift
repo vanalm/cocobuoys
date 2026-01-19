@@ -262,6 +262,7 @@ struct AlertsSignupView: View {
     let stations: [Buoy]
 
     @State private var selectedStationIds: Set<String>
+    @State private var manualStationId = ""
     @State private var thresholds = AlertThresholdSelection()
     @State private var isSubmitting = false
     @State private var isLoadingSubscriptions = false
@@ -298,7 +299,39 @@ struct AlertsSignupView: View {
                     .disabled(isSubmitting)
                 }
 
-                if stations.count > 1 {
+                if stations.isEmpty {
+                    Section("Station") {
+                        TextField("Enter buoy station ID", text: $manualStationId)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .disabled(isSubmitting || isLoadingSubscriptions)
+                        Button("Add Station") {
+                            let trimmed = manualStationId.trimmingCharacters(in: .whitespacesAndNewlines)
+                            guard !trimmed.isEmpty else { return }
+                            selectedStationIds.insert(trimmed)
+                            manualStationId = ""
+                        }
+                        .disabled(
+                            isSubmitting ||
+                            isLoadingSubscriptions ||
+                            manualStationId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        )
+                        if !selectedStationIds.isEmpty {
+                            ForEach(selectedStationIds.sorted(), id: \.self) { stationId in
+                                HStack {
+                                    Text(stationId)
+                                    Spacer()
+                                    Button(role: .destructive) {
+                                        selectedStationIds.remove(stationId)
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                    }
+                                    .disabled(isSubmitting || isLoadingSubscriptions)
+                                }
+                            }
+                        }
+                    }
+                } else if stations.count > 1 {
                     Section("Stations") {
                         ForEach(stations) { station in
                             Toggle(station.name, isOn: bindingForStation(station.id))
@@ -536,7 +569,7 @@ struct AlertsView: View {
                                     Text(subscription.stationId)
                                         .font(.headline)
                                     if let minPeriod = subscription.minPeriod {
-                                        Text("Min period: \(minPeriod) min")
+                                        Text("Period: \(minPeriod) sec")
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }

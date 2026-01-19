@@ -11,7 +11,6 @@ import MapKit
 struct ContentView: View {
     @StateObject private var viewModel = MapScreenViewModel()
     @Environment(\.scenePhase) private var scenePhase
-    @State private var showAlerts = false
     @State private var showBulkAlerts = false
     
     var body: some View {
@@ -69,16 +68,10 @@ struct ContentView: View {
                         } label: {
                             Label("\(viewModel.isTimelapseActive ? "Disable Timelapse" : "Enable Timelapse") (\(viewModel.timelapseCandidateCount))", systemImage: "clock.arrow.circlepath")
                         }
-                        Divider()
-                        Button {
-                            showAlerts = true
-                        } label: {
-                            Label("Buoy Alerts", systemImage: "bell")
-                        }
                     } label: {
                         Image(systemName: "slider.horizontal.3")
                             .symbolRenderingMode(.hierarchical)
-                            .padding(10)
+                            .padding(8)
                             .background(.thinMaterial, in: Circle())
                     }
                     Button {
@@ -90,7 +83,7 @@ struct ContentView: View {
                     } label: {
                         Image(systemName: viewModel.isHomeBannerCollapsed ? "house" : "house.fill")
                             .symbolRenderingMode(.hierarchical)
-                            .padding(10)
+                            .padding(8)
                             .background(.thinMaterial, in: Circle())
                     }
                     Button {
@@ -98,7 +91,7 @@ struct ContentView: View {
                     } label: {
                         Image(systemName: "bell.badge")
                             .symbolRenderingMode(.hierarchical)
-                            .padding(10)
+                            .padding(8)
                             .background(.thinMaterial, in: Circle())
                     }
                 }
@@ -165,9 +158,6 @@ struct ContentView: View {
             viewModel.dismissGraph()
         }) { station in
             StationDetailView(station: station, service: viewModel.dataService)
-        }
-        .sheet(isPresented: $showAlerts) {
-            AlertsView()
         }
         .sheet(isPresented: $showBulkAlerts) {
             AlertsSignupView(
