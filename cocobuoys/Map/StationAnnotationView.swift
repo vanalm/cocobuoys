@@ -57,21 +57,22 @@ final class StationAnnotationView: MKAnnotationView {
         if case let .wave(style) = stationAnnotation.kind {
             apply(style: style)
         } else {
-            apply(style: BuoyMarkerStyle(color: .blue, opacity: 0.9, size: 18, direction: 0))
+            apply(style: BuoyMarkerStyle(color: .blue, opacity: 0.9, size: 18, direction: 0, whiteAtTop: true))
         }
     }
     
     private func apply(style: BuoyMarkerStyle) {
         let width = style.size
         let height = style.size * 1.4
-        bounds = CGRect(origin: .zero, size: CGSize(width: width, height: height))
-        markerLayer.frame = bounds
+        let padding = max(4, style.size * 0.25)
+        bounds = CGRect(origin: .zero, size: CGSize(width: width + padding * 2, height: height + padding * 2))
+        let contentFrame = bounds.insetBy(dx: padding, dy: padding)
+        markerLayer.frame = contentFrame
         markerLayer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         markerLayer.position = CGPoint(x: bounds.midX, y: bounds.midY)
-        markerLayer.path = trianglePath(width: width, height: height)
+        markerLayer.path = trianglePath(width: contentFrame.width, height: contentFrame.height)
         markerLayer.fillColor = UIColor(style.color).cgColor
         markerLayer.opacity = Float(style.opacity)
-        
         markerLayer.setAffineTransform(.identity)
         let adjustedDirection = (style.direction + 180).truncatingRemainder(dividingBy: 360)
         let radians = CGFloat(adjustedDirection) * .pi / 180

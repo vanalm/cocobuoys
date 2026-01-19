@@ -11,6 +11,8 @@ import MapKit
 struct ContentView: View {
     @StateObject private var viewModel = MapScreenViewModel()
     @Environment(\.scenePhase) private var scenePhase
+    @State private var showAlerts = false
+    @State private var showBulkAlerts = false
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -67,6 +69,12 @@ struct ContentView: View {
                         } label: {
                             Label("\(viewModel.isTimelapseActive ? "Disable Timelapse" : "Enable Timelapse") (\(viewModel.timelapseCandidateCount))", systemImage: "clock.arrow.circlepath")
                         }
+                        Divider()
+                        Button {
+                            showAlerts = true
+                        } label: {
+                            Label("Buoy Alerts", systemImage: "bell")
+                        }
                     } label: {
                         Image(systemName: "slider.horizontal.3")
                             .symbolRenderingMode(.hierarchical)
@@ -85,21 +93,10 @@ struct ContentView: View {
                             .padding(10)
                             .background(.thinMaterial, in: Circle())
                     }
-                    Menu {
-                        ForEach(MapBaseLayer.allCases) { style in
-                            Button {
-                                viewModel.select(mapStyle: style)
-                            } label: {
-                                HStack {
-                                    Label(style.title, systemImage: style.systemImage)
-                                    if viewModel.mapStyle == style {
-                                        Image(systemName: "checkmark")
-                                    }
-                                }
-                            }
-                        }
+                    Button {
+                        showBulkAlerts = true
                     } label: {
-                        Image(systemName: viewModel.mapStyle.systemImage)
+                        Image(systemName: "bell.badge")
                             .symbolRenderingMode(.hierarchical)
                             .padding(10)
                             .background(.thinMaterial, in: Circle())
@@ -168,6 +165,15 @@ struct ContentView: View {
             viewModel.dismissGraph()
         }) { station in
             StationDetailView(station: station, service: viewModel.dataService)
+        }
+        .sheet(isPresented: $showAlerts) {
+            AlertsView()
+        }
+        .sheet(isPresented: $showBulkAlerts) {
+            AlertsSignupView(
+                title: "Alerts for Visible Stations",
+                stations: viewModel.visibleBuoysForAlerts()
+            )
         }
         .alert("Set Home Location?", isPresented: $viewModel.showHomePrompt) {
             Button("Not Now", role: .cancel) {

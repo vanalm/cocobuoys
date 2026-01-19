@@ -29,6 +29,7 @@ struct StationDetailView: View {
     @State private var defaultDomain: ClosedRange<Date>?
     @State private var panStartDomain: ClosedRange<Date>?
     @State private var lastScale: CGFloat = 1
+    @State private var showAlertSignup = false
     
     init(station: Buoy, service: NOAANdbcServicing) {
         _viewModel = StateObject(wrappedValue: StationHistoryViewModel(station: station, service: service))
@@ -51,9 +52,22 @@ struct StationDetailView: View {
                 refreshTimeDomain(resetVisible: true)
             }
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        showAlertSignup = true
+                    } label: {
+                        Image(systemName: "bell.badge")
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Close") { dismiss() }
                 }
+            }
+            .sheet(isPresented: $showAlertSignup) {
+                AlertsSignupView(
+                    title: "Alerts for \(viewModel.station.name)",
+                    stations: [viewModel.station]
+                )
             }
             .onReceive(viewModel.$history) { _ in
                 refreshTimeDomain(resetVisible: true)

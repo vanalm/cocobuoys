@@ -53,6 +53,8 @@
 		AB9554182EA36CFF0074A7F1 /* cocobuoys.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = cocobuoys.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB9554252EA36CFF0074A7F1 /* cocobuoysTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = cocobuoysTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB95542F2EA36D000074A7F1 /* cocobuoysUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = cocobuoysUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABCECB682F1DA207006233C9 /* cocobuoys.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = cocobuoys.entitlements; sourceTree = "<group>"; };
+		ABCECB692F1DA21C006233C9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		ABFC96DE2EC5B70C00962BCC /* SatelliteMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SatelliteMapView.swift; sourceTree = "<group>"; };
 		ABFC96DF2EC5B70C00962BCC /* StationAnnotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationAnnotation.swift; sourceTree = "<group>"; };
 		ABFC96E02EC5B70C00962BCC /* StationAnnotationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationAnnotationView.swift; sourceTree = "<group>"; };
@@ -178,6 +180,8 @@
 		ABFC96F72EC5B70C00962BCC /* cocobuoys */ = {
 			isa = PBXGroup;
 			children = (
+				ABCECB692F1DA21C006233C9 /* Info.plist */,
+				ABCECB682F1DA207006233C9 /* cocobuoys.entitlements */,
 				ABFC96E22EC5B70C00962BCC /* Map */,
 				ABFC96E72EC5B70C00962BCC /* Models */,
 				ABFC96EB2EC5B70C00962BCC /* Services */,
@@ -524,11 +528,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = cocobuoys/cocobuoys.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JZRGLK3J87;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = cocobuoys/Info.plist;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We use your location to show nearby buoy and weather data.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -553,11 +559,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = cocobuoys/cocobuoys.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JZRGLK3J87;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = cocobuoys/Info.plist;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We use your location to show nearby buoy and weather data.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

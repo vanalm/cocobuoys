@@ -158,6 +158,12 @@ final class MapScreenViewModel: ObservableObject {
     func clearSelection() {
         selectedBuoy = nil
     }
+
+    func visibleBuoysForAlerts() -> [Buoy] {
+        let buoys = Array(buoyCache.values)
+        guard let region else { return buoys }
+        return buoys.filter { region.contains(coordinate: $0.coordinate) }
+    }
     
     private func observeLocationUpdates() {
         locationManager.$authorizationStatus
@@ -259,18 +265,27 @@ final class MapScreenViewModel: ObservableObject {
         updateHomeSummary()
     }
     
-    private func waveMarkerColor(for period: Double?) -> Color {
-        StationColorScale.wavePeriodColor(for: period)
+    private func waveMarkerColor(for height: Double?) -> Color {
+        StationColorScale.waveHeightColor(for: height)
     }
     
-    private func waveMarkerSize(for height: Double?) -> CGFloat {
-        guard let height else { return 20 }
-        let clamped = min(max(height, 1), 20)
-        let fraction = (clamped - 1) / 19
-        let eased = pow(fraction, 0.8)
-        let base: CGFloat = 18
-        let growth: CGFloat = 36
-        return base + CGFloat(eased) * growth
+    private func waveMarkerSize(for period: Double?) -> CGFloat {
+        guard let period else { return 15 }
+        if period < 8 { return 15 }
+        if period < 9 { return 19 }
+        if period < 10 { return 25 }
+        if period < 10 { return 29 }
+        if period < 11 { return 33 }
+        if period < 12 { return 37 }
+        if period < 13 { return 41 }
+        if period < 14 { return 45 }
+        if period < 16 { return 49 }
+        if period < 17 { return 53 }
+        if period < 18 { return 57 }
+        if period < 19 { return 61 }
+        if period < 20 { return 65 }
+        if period >= 20 { return 69 }
+        return 90
     }
 
     func confirmHomeLocation() {
@@ -505,11 +520,13 @@ final class MapScreenViewModel: ObservableObject {
     private func waveAnnotation(for buoy: Buoy, existing: [String: StationAnnotation]) -> StationAnnotation? {
         guard let observation = observation(for: buoy),
               observation.heightFeet != nil || observation.periodSeconds != nil else { return nil }
+        let whiteAtTop = waveHeightIsRising(for: buoy, observation: observation)
         let style = BuoyMarkerStyle(
-            color: waveMarkerColor(for: observation.periodSeconds),
+            color: waveMarkerColor(for: observation.heightFeet),
             opacity: 0.9,
-            size: waveMarkerSize(for: observation.heightFeet),
-            direction: observation.directionDegrees ?? 0
+            size: waveMarkerSize(for: observation.periodSeconds),
+            direction: observation.directionDegrees ?? 0,
+            whiteAtTop: whiteAtTop
         )
         let identifier = "\(buoy.id)-wave"
         if let annotation = existing[identifier] {
@@ -534,6 +551,18 @@ final class MapScreenViewModel: ObservableObject {
             return annotation
         }
         return StationAnnotation(station: buoy, kind: .wind(style: style))
+    }
+
+    private func waveHeightIsRising(for buoy: Buoy, observation: BuoyObservation) -> Bool {
+        guard let currentHeight = observation.heightFeet else { return true }
+        let history = isTimelapseActive
+            ? (historyCache[buoy.id]?.observations ?? buoy.observations)
+            : buoy.observations
+        let previous = history
+            .filter { $0.timestamp < observation.timestamp && $0.heightFeet != nil }
+            .last
+        guard let previousHeight = previous?.heightFeet else { return true }
+        return currentHeight >= previousHeight
     }
     
     private func centerOnUserIfNeeded(_ coordinate: CLLocationCoordinate2D) {

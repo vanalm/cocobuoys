@@ -17,12 +17,21 @@ enum StationColorScale {
     }
     
     private static let waveHeightPalette: [RGB] = [
-        .init(r: 0.078, g: 0.200, b: 0.475), // deep blue
-        .init(r: 0.000, g: 0.482, b: 0.643), // teal
-        .init(r: 0.305, g: 0.733, b: 0.482), // seafoam
-        .init(r: 0.937, g: 0.902, b: 0.188), // golden yellow
-        .init(r: 0.976, g: 0.647, b: 0.149), // orange
-        .init(r: 0.890, g: 0.141, b: 0.114)  // crimson
+        .init(r: 100.0 / 255.0, g: 149.0 / 255.0, b: 237.0 / 255.0), // cornflowerblue
+        .init(r: 30.0 / 255.0, g: 144.0 / 255.0, b: 255.0 / 255.0),  // dodgerblue
+        .init(r: 70.0 / 255.0, g: 130.0 / 255.0, b: 180.0 / 255.0),  // steelblue
+        .init(r: 65.0 / 255.0, g: 105.0 / 255.0, b: 225.0 / 255.0),  // royalblue
+        .init(r: 34.0 / 255.0, g: 139.0 / 255.0, b: 34.0 / 255.0),   // forestgreen
+        .init(r: 144.0 / 255.0, g: 238.0 / 255.0, b: 144.0 / 255.0), // lightgreen
+        .init(r: 173.0 / 255.0, g: 255.0 / 255.0, b: 47.0 / 255.0),  // greenyellow
+        .init(r: 255.0 / 255.0, g: 255.0 / 255.0, b: 0.0 / 255.0),   // yellow
+        .init(r: 255.0 / 255.0, g: 140.0 / 255.0, b: 0.0 / 255.0),   // darkorange
+        .init(r: 255.0 / 255.0, g: 165.0 / 255.0, b: 0.0 / 255.0),   // orange
+        .init(r: 255.0 / 255.0, g: 69.0 / 255.0, b: 0.0 / 255.0),    // orangered
+        .init(r: 255.0 / 255.0, g: 0.0 / 255.0, b: 0.0 / 255.0),     // red
+        .init(r: 199.0 / 255.0, g: 21.0 / 255.0, b: 133.0 / 255.0),  // mediumvioletred
+        .init(r: 219.0 / 255.0, g: 112.0 / 255.0, b: 147.0 / 255.0), // palevioletred
+        .init(r: 255.0 / 255.0, g: 192.0 / 255.0, b: 203.0 / 255.0)  // pink
     ]
     
     private static let wavePeriodPalette: [RGB] = [
@@ -80,8 +89,9 @@ enum StationColorScale {
     // MARK: - Wave Styling
     
     static func waveHeightColor(for height: Double?) -> Color {
-        let fraction = pow(normalizedFraction(value: height, lowerBound: 1, upperBound: 20), 0.75)
-        return interpolateColor(in: waveHeightPalette, fraction: fraction)
+        guard let height else { return .white }
+        let index = min(max(Int(floor(height)), 0), waveHeightPalette.count - 1)
+        return waveHeightPalette[index].color
     }
     
     static func wavePeriodColor(for period: Double?) -> Color {

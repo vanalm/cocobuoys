@@ -126,6 +126,7 @@ struct BuoyMarkerStyle: Hashable {
     var opacity: Double
     var size: CGFloat
     var direction: Double
+    var whiteAtTop: Bool
 }
 
 struct WindMarkerStyle: Hashable {
