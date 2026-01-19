@@ -3,34 +3,8 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
-
-/* Begin PBXBuildFile section */
-		ABFC96F82EC5B70C00962BCC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = ABFC96F42EC5B70C00962BCC /* Assets.xcassets */; };
-		ABFC96F92EC5B70C00962BCC /* SatelliteMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96DE2EC5B70C00962BCC /* SatelliteMapView.swift */; };
-		ABFC96FA2EC5B70C00962BCC /* StationAnnotation.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96DF2EC5B70C00962BCC /* StationAnnotation.swift */; };
-		ABFC96FB2EC5B70C00962BCC /* StationAnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96E02EC5B70C00962BCC /* StationAnnotationView.swift */; };
-		ABFC96FC2EC5B70C00962BCC /* WindAnnotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96E12EC5B70C00962BCC /* WindAnnotationView.swift */; };
-		ABFC96FD2EC5B70C00962BCC /* Buoy.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96E32EC5B70C00962BCC /* Buoy.swift */; };
-		ABFC96FE2EC5B70C00962BCC /* HomeSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96E42EC5B70C00962BCC /* HomeSummary.swift */; };
-		ABFC96FF2EC5B70C00962BCC /* MarineStation.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96E52EC5B70C00962BCC /* MarineStation.swift */; };
-		ABFC97002EC5B70C00962BCC /* StationColorScale.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96E62EC5B70C00962BCC /* StationColorScale.swift */; };
-		ABFC97012EC5B70C00962BCC /* HomeLocationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96E82EC5B70C00962BCC /* HomeLocationStore.swift */; };
-		ABFC97022EC5B70C00962BCC /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96E92EC5B70C00962BCC /* LocationManager.swift */; };
-		ABFC97032EC5B70C00962BCC /* NOAANdbcService.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96EA2EC5B70C00962BCC /* NOAANdbcService.swift */; };
-		ABFC97042EC5B70C00962BCC /* MapScreenViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96EC2EC5B70C00962BCC /* MapScreenViewModel.swift */; };
-		ABFC97052EC5B70C00962BCC /* StationHistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96ED2EC5B70C00962BCC /* StationHistoryViewModel.swift */; };
-		ABFC97062EC5B70C00962BCC /* BuoyDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96EF2EC5B70C00962BCC /* BuoyDetailView.swift */; };
-		ABFC97072EC5B70C00962BCC /* HomeSummaryBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96F02EC5B70C00962BCC /* HomeSummaryBanner.swift */; };
-		ABFC97082EC5B70C00962BCC /* StationDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96F12EC5B70C00962BCC /* StationDetailView.swift */; };
-		ABFC97092EC5B70C00962BCC /* TimelapseControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96F22EC5B70C00962BCC /* TimelapseControlView.swift */; };
-		ABFC970A2EC5B70C00962BCC /* cocobuoysApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96F52EC5B70C00962BCC /* cocobuoysApp.swift */; };
-		ABFC970B2EC5B70C00962BCC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC96F62EC5B70C00962BCC /* ContentView.swift */; };
-		ABFC970F2EC5B71700962BCC /* cocobuoysUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC970C2EC5B71700962BCC /* cocobuoysUITests.swift */; };
-		ABFC97102EC5B71700962BCC /* cocobuoysUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC970D2EC5B71700962BCC /* cocobuoysUITestsLaunchTests.swift */; };
-		ABFC97132EC5B71F00962BCC /* cocobuoysTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFC97112EC5B71F00962BCC /* cocobuoysTests.swift */; };
-/* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
 		AB9554262EA36CFF0074A7F1 /* PBXContainerItemProxy */ = {
@@ -53,32 +27,25 @@
 		AB9554182EA36CFF0074A7F1 /* cocobuoys.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = cocobuoys.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB9554252EA36CFF0074A7F1 /* cocobuoysTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = cocobuoysTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB95542F2EA36D000074A7F1 /* cocobuoysUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = cocobuoysUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		ABCECB682F1DA207006233C9 /* cocobuoys.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = cocobuoys.entitlements; sourceTree = "<group>"; };
-		ABCECB692F1DA21C006233C9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		ABFC96DE2EC5B70C00962BCC /* SatelliteMapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SatelliteMapView.swift; sourceTree = "<group>"; };
-		ABFC96DF2EC5B70C00962BCC /* StationAnnotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationAnnotation.swift; sourceTree = "<group>"; };
-		ABFC96E02EC5B70C00962BCC /* StationAnnotationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationAnnotationView.swift; sourceTree = "<group>"; };
-		ABFC96E12EC5B70C00962BCC /* WindAnnotationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindAnnotationView.swift; sourceTree = "<group>"; };
-		ABFC96E32EC5B70C00962BCC /* Buoy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Buoy.swift; sourceTree = "<group>"; };
-		ABFC96E42EC5B70C00962BCC /* HomeSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSummary.swift; sourceTree = "<group>"; };
-		ABFC96E52EC5B70C00962BCC /* MarineStation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarineStation.swift; sourceTree = "<group>"; };
-		ABFC96E62EC5B70C00962BCC /* StationColorScale.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationColorScale.swift; sourceTree = "<group>"; };
-		ABFC96E82EC5B70C00962BCC /* HomeLocationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeLocationStore.swift; sourceTree = "<group>"; };
-		ABFC96E92EC5B70C00962BCC /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
-		ABFC96EA2EC5B70C00962BCC /* NOAANdbcService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NOAANdbcService.swift; sourceTree = "<group>"; };
-		ABFC96EC2EC5B70C00962BCC /* MapScreenViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapScreenViewModel.swift; sourceTree = "<group>"; };
-		ABFC96ED2EC5B70C00962BCC /* StationHistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationHistoryViewModel.swift; sourceTree = "<group>"; };
-		ABFC96EF2EC5B70C00962BCC /* BuoyDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuoyDetailView.swift; sourceTree = "<group>"; };
-		ABFC96F02EC5B70C00962BCC /* HomeSummaryBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSummaryBanner.swift; sourceTree = "<group>"; };
-		ABFC96F12EC5B70C00962BCC /* StationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StationDetailView.swift; sourceTree = "<group>"; };
-		ABFC96F22EC5B70C00962BCC /* TimelapseControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelapseControlView.swift; sourceTree = "<group>"; };
-		ABFC96F42EC5B70C00962BCC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		ABFC96F52EC5B70C00962BCC /* cocobuoysApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cocobuoysApp.swift; sourceTree = "<group>"; };
-		ABFC96F62EC5B70C00962BCC /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		ABFC970C2EC5B71700962BCC /* cocobuoysUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cocobuoysUITests.swift; sourceTree = "<group>"; };
-		ABFC970D2EC5B71700962BCC /* cocobuoysUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cocobuoysUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		ABFC97112EC5B71F00962BCC /* cocobuoysTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = cocobuoysTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		AB95541A2EA36CFF0074A7F1 /* cocobuoys */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = cocobuoys;
+			sourceTree = "<group>";
+		};
+		AB9554282EA36CFF0074A7F1 /* cocobuoysTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = cocobuoysTests;
+			sourceTree = "<group>";
+		};
+		AB9554322EA36D000074A7F1 /* cocobuoysUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = cocobuoysUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		AB9554152EA36CFF0074A7F1 /* Frameworks */ = {
@@ -108,9 +75,9 @@
 		AB95540F2EA36CFF0074A7F1 = {
 			isa = PBXGroup;
 			children = (
-				ABFC96F72EC5B70C00962BCC /* cocobuoys */,
-				ABFC97122EC5B71F00962BCC /* cocobuoysTests */,
-				ABFC970E2EC5B71700962BCC /* cocobuoysUITests */,
+				AB95541A2EA36CFF0074A7F1 /* cocobuoys */,
+				AB9554282EA36CFF0074A7F1 /* cocobuoysTests */,
+				AB9554322EA36D000074A7F1 /* cocobuoysUITests */,
 				AB9554192EA36CFF0074A7F1 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -123,92 +90,6 @@
 				AB95542F2EA36D000074A7F1 /* cocobuoysUITests.xctest */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		ABFC96E22EC5B70C00962BCC /* Map */ = {
-			isa = PBXGroup;
-			children = (
-				ABFC96DE2EC5B70C00962BCC /* SatelliteMapView.swift */,
-				ABFC96DF2EC5B70C00962BCC /* StationAnnotation.swift */,
-				ABFC96E02EC5B70C00962BCC /* StationAnnotationView.swift */,
-				ABFC96E12EC5B70C00962BCC /* WindAnnotationView.swift */,
-			);
-			path = Map;
-			sourceTree = "<group>";
-		};
-		ABFC96E72EC5B70C00962BCC /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				ABFC96E32EC5B70C00962BCC /* Buoy.swift */,
-				ABFC96E42EC5B70C00962BCC /* HomeSummary.swift */,
-				ABFC96E52EC5B70C00962BCC /* MarineStation.swift */,
-				ABFC96E62EC5B70C00962BCC /* StationColorScale.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		ABFC96EB2EC5B70C00962BCC /* Services */ = {
-			isa = PBXGroup;
-			children = (
-				ABFC96E82EC5B70C00962BCC /* HomeLocationStore.swift */,
-				ABFC96E92EC5B70C00962BCC /* LocationManager.swift */,
-				ABFC96EA2EC5B70C00962BCC /* NOAANdbcService.swift */,
-			);
-			path = Services;
-			sourceTree = "<group>";
-		};
-		ABFC96EE2EC5B70C00962BCC /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				ABFC96EC2EC5B70C00962BCC /* MapScreenViewModel.swift */,
-				ABFC96ED2EC5B70C00962BCC /* StationHistoryViewModel.swift */,
-			);
-			path = ViewModels;
-			sourceTree = "<group>";
-		};
-		ABFC96F32EC5B70C00962BCC /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				ABFC96EF2EC5B70C00962BCC /* BuoyDetailView.swift */,
-				ABFC96F02EC5B70C00962BCC /* HomeSummaryBanner.swift */,
-				ABFC96F12EC5B70C00962BCC /* StationDetailView.swift */,
-				ABFC96F22EC5B70C00962BCC /* TimelapseControlView.swift */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
-		ABFC96F72EC5B70C00962BCC /* cocobuoys */ = {
-			isa = PBXGroup;
-			children = (
-				ABCECB692F1DA21C006233C9 /* Info.plist */,
-				ABCECB682F1DA207006233C9 /* cocobuoys.entitlements */,
-				ABFC96E22EC5B70C00962BCC /* Map */,
-				ABFC96E72EC5B70C00962BCC /* Models */,
-				ABFC96EB2EC5B70C00962BCC /* Services */,
-				ABFC96EE2EC5B70C00962BCC /* ViewModels */,
-				ABFC96F32EC5B70C00962BCC /* Views */,
-				ABFC96F42EC5B70C00962BCC /* Assets.xcassets */,
-				ABFC96F52EC5B70C00962BCC /* cocobuoysApp.swift */,
-				ABFC96F62EC5B70C00962BCC /* ContentView.swift */,
-			);
-			path = cocobuoys;
-			sourceTree = "<group>";
-		};
-		ABFC970E2EC5B71700962BCC /* cocobuoysUITests */ = {
-			isa = PBXGroup;
-			children = (
-				ABFC970C2EC5B71700962BCC /* cocobuoysUITests.swift */,
-				ABFC970D2EC5B71700962BCC /* cocobuoysUITestsLaunchTests.swift */,
-			);
-			path = cocobuoysUITests;
-			sourceTree = "<group>";
-		};
-		ABFC97122EC5B71F00962BCC /* cocobuoysTests */ = {
-			isa = PBXGroup;
-			children = (
-				ABFC97112EC5B71F00962BCC /* cocobuoysTests.swift */,
-			);
-			path = cocobuoysTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -225,6 +106,9 @@
 			buildRules = (
 			);
 			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				AB95541A2EA36CFF0074A7F1 /* cocobuoys */,
 			);
 			name = cocobuoys;
 			packageProductDependencies = (
@@ -246,6 +130,9 @@
 			dependencies = (
 				AB9554272EA36CFF0074A7F1 /* PBXTargetDependency */,
 			);
+			fileSystemSynchronizedGroups = (
+				AB9554282EA36CFF0074A7F1 /* cocobuoysTests */,
+			);
 			name = cocobuoysTests;
 			packageProductDependencies = (
 			);
@@ -265,6 +152,9 @@
 			);
 			dependencies = (
 				AB9554312EA36D000074A7F1 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				AB9554322EA36D000074A7F1 /* cocobuoysUITests */,
 			);
 			name = cocobuoysUITests;
 			packageProductDependencies = (
@@ -297,7 +187,6 @@
 				};
 			};
 			buildConfigurationList = AB9554132EA36CFF0074A7F1 /* Build configuration list for PBXProject "cocobuoys" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -306,6 +195,7 @@
 			);
 			mainGroup = AB95540F2EA36CFF0074A7F1;
 			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
 			productRefGroup = AB9554192EA36CFF0074A7F1 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -322,7 +212,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ABFC96F82EC5B70C00962BCC /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -347,25 +236,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ABFC96F92EC5B70C00962BCC /* SatelliteMapView.swift in Sources */,
-				ABFC96FA2EC5B70C00962BCC /* StationAnnotation.swift in Sources */,
-				ABFC96FB2EC5B70C00962BCC /* StationAnnotationView.swift in Sources */,
-				ABFC96FC2EC5B70C00962BCC /* WindAnnotationView.swift in Sources */,
-				ABFC96FD2EC5B70C00962BCC /* Buoy.swift in Sources */,
-				ABFC96FE2EC5B70C00962BCC /* HomeSummary.swift in Sources */,
-				ABFC96FF2EC5B70C00962BCC /* MarineStation.swift in Sources */,
-				ABFC97002EC5B70C00962BCC /* StationColorScale.swift in Sources */,
-				ABFC97012EC5B70C00962BCC /* HomeLocationStore.swift in Sources */,
-				ABFC97022EC5B70C00962BCC /* LocationManager.swift in Sources */,
-				ABFC97032EC5B70C00962BCC /* NOAANdbcService.swift in Sources */,
-				ABFC97042EC5B70C00962BCC /* MapScreenViewModel.swift in Sources */,
-				ABFC97052EC5B70C00962BCC /* StationHistoryViewModel.swift in Sources */,
-				ABFC97062EC5B70C00962BCC /* BuoyDetailView.swift in Sources */,
-				ABFC97072EC5B70C00962BCC /* HomeSummaryBanner.swift in Sources */,
-				ABFC97082EC5B70C00962BCC /* StationDetailView.swift in Sources */,
-				ABFC97092EC5B70C00962BCC /* TimelapseControlView.swift in Sources */,
-				ABFC970A2EC5B70C00962BCC /* cocobuoysApp.swift in Sources */,
-				ABFC970B2EC5B70C00962BCC /* ContentView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -373,7 +243,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ABFC97132EC5B71F00962BCC /* cocobuoysTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -381,8 +250,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				ABFC970F2EC5B71700962BCC /* cocobuoysUITests.swift in Sources */,
-				ABFC97102EC5B71700962BCC /* cocobuoysUITestsLaunchTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -528,13 +395,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = cocobuoys/cocobuoys.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JZRGLK3J87;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = cocobuoys/Info.plist;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We use your location to show nearby buoy and weather data.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -559,13 +424,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = cocobuoys/cocobuoys.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JZRGLK3J87;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = cocobuoys/Info.plist;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We use your location to show nearby buoy and weather data.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
