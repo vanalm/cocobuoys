@@ -476,6 +476,7 @@ struct AlertsSignupView: View {
                             }
                             .contentShape(Rectangle())
                             .onTapGesture {
+                                applySubscriptionDefaults(subscription)
                                 selectedSubscription = subscription
                             }
                         }
@@ -625,6 +626,21 @@ struct AlertsSignupView: View {
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
+    private func applySubscriptionDefaults(_ subscription: AlertsSubscription) {
+        let usePeriod = subscription.usePeriod ?? (subscription.minPeriod != nil)
+        let periodSeconds = subscription.periodSeconds ?? Double(subscription.minPeriod ?? 20)
+        let useWaveHeight = subscription.useWaveHeight ?? false
+        let minSwellHeight = subscription.minSwellHeight ?? 4
+        let notificationFrequencyHours = subscription.notificationFrequencyHours ?? 6
+        thresholds = AlertThresholdSelection(
+            usePeriod: usePeriod,
+            periodSeconds: periodSeconds,
+            useWaveHeight: useWaveHeight,
+            minSwellHeight: minSwellHeight
+        )
+        self.notificationFrequencyHours = notificationFrequencyHours
+    }
+
     private func subscribe() async {
         guard !isSubmitting else { return }
         guard thresholds.usePeriod || thresholds.useWaveHeight else {
@@ -655,6 +671,9 @@ struct AlertsSignupView: View {
                     deviceToken: token,
                     stationId: stationId,
                     minPeriod: thresholds.usePeriod ? Int(thresholds.periodSeconds.rounded()) : nil,
+                    usePeriod: thresholds.usePeriod,
+                    periodSeconds: thresholds.periodSeconds,
+                    useWaveHeight: thresholds.useWaveHeight,
                     minSwellHeight: thresholds.minSwellHeight,
                     notificationFrequencyHours: notificationFrequencyHours
                 )
@@ -665,7 +684,17 @@ struct AlertsSignupView: View {
             }
 
             await loadSubscriptions(allowWhileLoading: true)
-            statusMessage = "Alerts updated."
+            let addCount = addIds.count
+            let removeCount = removeIds.count
+            if addCount > 0 && removeCount > 0 {
+                statusMessage = "Subscribed to \(addCount) station(s), removed \(removeCount)."
+            } else if addCount > 0 {
+                statusMessage = "Subscribed to \(addCount) station(s)."
+            } else if removeCount > 0 {
+                statusMessage = "Removed \(removeCount) station(s)."
+            } else {
+                statusMessage = "No alert changes."
+            }
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
@@ -905,6 +934,7 @@ struct AlertsView: View {
                             }
                             .contentShape(Rectangle())
                             .onTapGesture {
+                                viewModel.apply(subscription: subscription)
                                 selectedSubscription = subscription
                             }
                         }
@@ -1072,6 +1102,15 @@ final class AlertsViewModel: ObservableObject {
     init(service: AlertsService = AlertsService()) {
         self.service = service
         refreshDeviceToken()
+    }
+
+    func apply(subscription: AlertsSubscription) {
+        stationIdInput = subscription.stationId
+        notificationFrequencyHours = subscription.notificationFrequencyHours ?? 6
+        usePeriodThreshold = subscription.usePeriod ?? (subscription.minPeriod != nil)
+        periodSeconds = subscription.periodSeconds ?? Double(subscription.minPeriod ?? 20)
+        useWaveThreshold = subscription.useWaveHeight ?? false
+        minSwellHeight = subscription.minSwellHeight ?? 4
     }
 
     func refreshDeviceToken() {
