@@ -39,41 +39,21 @@ struct ContentView: View {
             
             VStack(spacing: 12) {
                 HStack(spacing: 12) {
-                    Spacer()
                     Menu {
-                        Button {
-                            viewModel.toggleWaveVisibility()
-                        } label: {
-                            Label("Wave Markers", systemImage: viewModel.showWaveStations ? "checkmark.square" : "square")
-                        }
-                        Button {
-                            viewModel.toggleWindVisibility()
-                        } label: {
-                            Label("Wind Markers", systemImage: viewModel.showWindStations ? "checkmark.square" : "square")
-                        }
-                        Divider()
-                        Button {
-                            viewModel.requestHomeReassignment()
-                        } label: {
-                            Label("Change Home Location", systemImage: "scope")
-                        }
-                        Button(role: .destructive) {
-                            viewModel.clearHomeLocation()
-                        } label: {
-                            Label("Clear Home Location", systemImage: "trash")
-                        }
-                        Divider()
                         Button {
                             viewModel.toggleTimelapseMode()
                         } label: {
                             Label("\(viewModel.isTimelapseActive ? "Disable Timelapse" : "Enable Timelapse") (\(viewModel.timelapseCandidateCount))", systemImage: "clock.arrow.circlepath")
                         }
                     } label: {
-                        Image(systemName: "slider.horizontal.3")
-                            .symbolRenderingMode(.hierarchical)
+                        Image("CoconutSignal")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 24, height: 24)
                             .padding(8)
                             .background(.thinMaterial, in: Circle())
                     }
+                    Spacer()
                     Button {
                         if viewModel.isHomeBannerCollapsed {
                             viewModel.expandHomeSummary()
@@ -104,8 +84,8 @@ struct ContentView: View {
                         onUpdate: {
                             viewModel.refreshHomeConditions()
                         },
-                        onClear: {
-                            viewModel.clearHomeLocation()
+                        onChangeHome: {
+                            viewModel.requestHomeReassignment()
                         },
                         onTitleTap: {
                             viewModel.expandHomeSummary()

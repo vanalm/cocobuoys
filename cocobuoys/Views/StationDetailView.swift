@@ -72,7 +72,7 @@ struct StationDetailView: View {
             .onReceive(viewModel.$history) { _ in
                 refreshTimeDomain(resetVisible: true)
             }
-            .onChange(of: viewModel.selectedMetrics) { _ in
+            .onChange(of: viewModel.selectedMetrics) {
                 refreshTimeDomain(resetVisible: true)
             }
         }
@@ -359,22 +359,40 @@ struct StationDetailView: View {
         .allowsHitTesting(false)
     }
     
-    @ViewBuilder
     private func combinedWindChart(metrics: [StationMetric], xDomain: ClosedRange<Date>, history: [BuoyObservation], tickDates: [Date]) -> some View {
         let domainMetrics = metrics.filter { $0 == .windSpeed || $0 == .windGust }
-        if let yDomain = combinedDomain(for: domainMetrics, history: history) {
+        guard let yDomain = combinedDomain(for: domainMetrics, history: history) else {
+            return AnyView(EmptyView())
+        }
+        let speedMetric = domainMetrics.first { $0 == .windSpeed }
+        let gustMetric = domainMetrics.first { $0 == .windGust }
+        return AnyView(
             Chart {
-                ForEach(domainMetrics, id: \.self) { metric in
-                    let dash: [CGFloat] = metric == .windGust ? [4, 3] : []
+                if let speedMetric {
                     ForEach(history, id: \.id) { observation in
-                        if let value = metric.value(for: observation) {
+                        if let value = speedMetric.value(for: observation) {
                             LineMark(
                                 x: .value("Time", observation.timestamp),
-                                y: .value(metric.label, value)
+                                y: .value(speedMetric.label, value),
+                                series: .value("Metric", speedMetric.label)
                             )
                             .interpolationMethod(.catmullRom)
-                            .foregroundStyle(metric.color)
-                            .lineStyle(.init(lineWidth: 2, dash: dash))
+                            .foregroundStyle(speedMetric.color)
+                            .lineStyle(.init(lineWidth: 2))
+                        }
+                    }
+                }
+                if let gustMetric {
+                    ForEach(history, id: \.id) { observation in
+                        if let value = gustMetric.value(for: observation) {
+                            LineMark(
+                                x: .value("Time", observation.timestamp),
+                                y: .value(gustMetric.label, value),
+                                series: .value("Metric", gustMetric.label)
+                            )
+                            .interpolationMethod(.catmullRom)
+                            .foregroundStyle(gustMetric.color)
+                            .lineStyle(.init(lineWidth: 2, dash: [4, 3]))
                         }
                     }
                 }
@@ -382,15 +400,21 @@ struct StationDetailView: View {
                     RuleMark(x: .value("Selected", selected.timestamp))
                         .foregroundStyle(Color.secondary)
                         .lineStyle(.init(lineWidth: 1, dash: [3, 4]))
-                    ForEach(domainMetrics, id: \.self) { metric in
-                        if let value = metric.value(for: selected) {
-                            PointMark(
-                                x: .value("Time", selected.timestamp),
-                                y: .value(metric.label, value)
-                            )
-                            .symbolSize(70)
-                            .foregroundStyle(metric.color)
-                        }
+                    if let speedMetric, let value = speedMetric.value(for: selected) {
+                        PointMark(
+                            x: .value("Time", selected.timestamp),
+                            y: .value(speedMetric.label, value)
+                        )
+                        .symbolSize(70)
+                        .foregroundStyle(speedMetric.color)
+                    }
+                    if let gustMetric, let value = gustMetric.value(for: selected) {
+                        PointMark(
+                            x: .value("Time", selected.timestamp),
+                            y: .value(gustMetric.label, value)
+                        )
+                        .symbolSize(70)
+                        .foregroundStyle(gustMetric.color)
                     }
                 }
             }
@@ -419,7 +443,7 @@ struct StationDetailView: View {
                     interactionOverlay(proxy: proxy, geo: geo, xDomain: xDomain)
                 }
             }
-        }
+        )
     }
     
     private func updateSelection(at location: CGPoint, proxy: ChartProxy, geometry: GeometryProxy) {

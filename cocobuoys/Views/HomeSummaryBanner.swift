@@ -12,7 +12,7 @@ struct HomeSummaryBanner: View {
     @Environment(\.openURL) private var openURL
     let summary: HomeSummary
     var onUpdate: () -> Void
-    var onClear: () -> Void
+    var onChangeHome: () -> Void
     var onTitleTap: () -> Void
     var onClose: () -> Void
     
@@ -107,9 +107,9 @@ struct HomeSummaryBanner: View {
                 .buttonStyle(.plain)
                 Button {
                     clearHighlights()
-                    onClear()
+                    onChangeHome()
                 } label: {
-                    Image(systemName: "trash")
+                    Image(systemName: "scope")
                         .imageScale(.medium)
                         .padding(6)
                         .background(.thinMaterial, in: Circle())
@@ -993,7 +993,7 @@ private enum DiagnosticsFormatter {
             }.reversed())
         ),
         onUpdate: {},
-        onClear: {},
+        onChangeHome: {},
         onTitleTap: {},
         onClose: {}
     )
