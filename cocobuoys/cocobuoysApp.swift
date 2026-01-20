@@ -112,6 +112,12 @@ struct AlertsSubscription: Identifiable, Decodable {
     let periodSeconds: Double?
     let useWaveHeight: Bool?
     let minSwellHeight: Double?
+    let useWindSpeed: Bool?
+    let minWindSpeed: Double?
+    let maxWindSpeed: Double?
+    let useWindGust: Bool?
+    let minWindGust: Double?
+    let maxWindGust: Double?
     let notificationFrequencyHours: Int?
 
     var id: String { subscriptionId ?? stationId }
@@ -125,6 +131,12 @@ struct AlertsSubscription: Identifiable, Decodable {
         case periodSeconds
         case useWaveHeight
         case minSwellHeight
+        case useWindSpeed
+        case minWindSpeed
+        case maxWindSpeed
+        case useWindGust
+        case minWindGust
+        case maxWindGust
         case notificationFrequencyHours
     }
 
@@ -138,6 +150,12 @@ struct AlertsSubscription: Identifiable, Decodable {
         periodSeconds = try container.decodeIfPresent(Double.self, forKey: .periodSeconds)
         useWaveHeight = try container.decodeIfPresent(Bool.self, forKey: .useWaveHeight)
         minSwellHeight = try container.decodeIfPresent(Double.self, forKey: .minSwellHeight)
+        useWindSpeed = try container.decodeIfPresent(Bool.self, forKey: .useWindSpeed)
+        minWindSpeed = try container.decodeIfPresent(Double.self, forKey: .minWindSpeed)
+        maxWindSpeed = try container.decodeIfPresent(Double.self, forKey: .maxWindSpeed)
+        useWindGust = try container.decodeIfPresent(Bool.self, forKey: .useWindGust)
+        minWindGust = try container.decodeIfPresent(Double.self, forKey: .minWindGust)
+        maxWindGust = try container.decodeIfPresent(Double.self, forKey: .maxWindGust)
         notificationFrequencyHours = try container.decodeIfPresent(
             Int.self,
             forKey: .notificationFrequencyHours
@@ -151,6 +169,12 @@ struct SubscriptionEditValues: Equatable {
     var periodSeconds: Double
     var useWaveHeight: Bool
     var minSwellHeight: Double
+    var useWindSpeed: Bool
+    var minWindSpeed: Double
+    var maxWindSpeed: Double
+    var useWindGust: Bool
+    var minWindGust: Double
+    var maxWindGust: Double
 }
 
 enum AlertsServiceError: Error, LocalizedError {
@@ -204,6 +228,12 @@ final class AlertsService {
                    periodSeconds: Double? = nil,
                    useWaveHeight: Bool? = nil,
                    minSwellHeight: Double? = nil,
+                   useWindSpeed: Bool? = nil,
+                   minWindSpeed: Double? = nil,
+                   maxWindSpeed: Double? = nil,
+                   useWindGust: Bool? = nil,
+                   minWindGust: Double? = nil,
+                   maxWindGust: Double? = nil,
                    notificationFrequencyHours: Int? = nil) async throws {
         let payload = SubscriptionPayload(
             deviceToken: deviceToken,
@@ -213,6 +243,12 @@ final class AlertsService {
             periodSeconds: periodSeconds,
             useWaveHeight: useWaveHeight,
             minSwellHeight: minSwellHeight,
+            useWindSpeed: useWindSpeed,
+            minWindSpeed: minWindSpeed,
+            maxWindSpeed: maxWindSpeed,
+            useWindGust: useWindGust,
+            minWindGust: minWindGust,
+            maxWindGust: maxWindGust,
             notificationFrequencyHours: notificationFrequencyHours
         )
         _ = try await performRequest(path: "/devices/subscribe", method: "POST", body: payload)
@@ -226,6 +262,12 @@ final class AlertsService {
                             periodSeconds: Double?,
                             useWaveHeight: Bool?,
                             minSwellHeight: Double?,
+                            useWindSpeed: Bool?,
+                            minWindSpeed: Double?,
+                            maxWindSpeed: Double?,
+                            useWindGust: Bool?,
+                            minWindGust: Double?,
+                            maxWindGust: Double?,
                             notificationFrequencyHours: Int?) async throws {
         let payload = SubscriptionUpdatePayload(
             deviceToken: deviceToken,
@@ -235,6 +277,12 @@ final class AlertsService {
             periodSeconds: periodSeconds,
             useWaveHeight: useWaveHeight,
             minSwellHeight: minSwellHeight,
+            useWindSpeed: useWindSpeed,
+            minWindSpeed: minWindSpeed,
+            maxWindSpeed: maxWindSpeed,
+            useWindGust: useWindGust,
+            minWindGust: minWindGust,
+            maxWindGust: maxWindGust,
             notificationFrequencyHours: notificationFrequencyHours
         )
         _ = try await performRequest(
@@ -253,6 +301,12 @@ final class AlertsService {
             periodSeconds: nil,
             useWaveHeight: nil,
             minSwellHeight: nil,
+            useWindSpeed: nil,
+            minWindSpeed: nil,
+            maxWindSpeed: nil,
+            useWindGust: nil,
+            minWindGust: nil,
+            maxWindGust: nil,
             notificationFrequencyHours: nil
         )
         _ = try await performRequest(path: "/devices/unsubscribe", method: "DELETE", body: payload)
@@ -310,6 +364,12 @@ private struct SubscriptionPayload: Encodable {
     let periodSeconds: Double?
     let useWaveHeight: Bool?
     let minSwellHeight: Double?
+    let useWindSpeed: Bool?
+    let minWindSpeed: Double?
+    let maxWindSpeed: Double?
+    let useWindGust: Bool?
+    let minWindGust: Double?
+    let maxWindGust: Double?
     let notificationFrequencyHours: Int?
 
     enum CodingKeys: String, CodingKey {
@@ -320,6 +380,12 @@ private struct SubscriptionPayload: Encodable {
         case periodSeconds
         case useWaveHeight
         case minSwellHeight
+        case useWindSpeed
+        case minWindSpeed
+        case maxWindSpeed
+        case useWindGust
+        case minWindGust
+        case maxWindGust
         case notificationFrequencyHours
     }
 }
@@ -332,6 +398,12 @@ private struct SubscriptionUpdatePayload: Encodable {
     let periodSeconds: Double?
     let useWaveHeight: Bool?
     let minSwellHeight: Double?
+    let useWindSpeed: Bool?
+    let minWindSpeed: Double?
+    let maxWindSpeed: Double?
+    let useWindGust: Bool?
+    let minWindGust: Double?
+    let maxWindGust: Double?
     let notificationFrequencyHours: Int?
 
     enum CodingKeys: String, CodingKey {
@@ -342,6 +414,12 @@ private struct SubscriptionUpdatePayload: Encodable {
         case periodSeconds
         case useWaveHeight
         case minSwellHeight
+        case useWindSpeed
+        case minWindSpeed
+        case maxWindSpeed
+        case useWindGust
+        case minWindGust
+        case maxWindGust
         case notificationFrequencyHours
     }
 }
@@ -357,10 +435,16 @@ private struct TestNotificationPayload: Encodable {
 }
 
 private struct AlertThresholdSelection {
-    var usePeriod: Bool = true
+    var usePeriod: Bool = false
     var periodSeconds: Double = 15
     var useWaveHeight: Bool = false
     var minSwellHeight: Double = 4
+    var useWindSpeed: Bool = false
+    var minWindSpeed: Double = 5
+    var maxWindSpeed: Double = 25
+    var useWindGust: Bool = false
+    var minWindGust: Double = 10
+    var maxWindGust: Double = 35
 }
 
 struct AlertsSignupView: View {
@@ -372,7 +456,7 @@ struct AlertsSignupView: View {
     @State private var thresholds = AlertThresholdSelection()
     @State private var notificationFrequencyHours = 6
     @State private var selectedSubscription: AlertsSubscription?
-    @State private var pendingDeleteStationId: String?
+    @State private var pendingDeleteSubscription: AlertsSubscription?
     @State private var isSubmitting = false
     @State private var isLoadingSubscriptions = false
     @State private var existingSubscriptions: [AlertsSubscription] = []
@@ -466,18 +550,18 @@ struct AlertsSignupView: View {
                                             .foregroundStyle(.secondary)
                                     }
                                 }
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    applySubscriptionDefaults(subscription)
+                                    selectedSubscription = subscription
+                                }
                                 Spacer()
                                 Button(role: .destructive) {
-                                    pendingDeleteStationId = subscription.stationId
+                                    pendingDeleteSubscription = subscription
                                 } label: {
                                     Image(systemName: "trash")
                                 }
                                 .disabled(isSubmitting || isLoadingSubscriptions)
-                            }
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                applySubscriptionDefaults(subscription)
-                                selectedSubscription = subscription
                             }
                         }
                     }
@@ -486,27 +570,78 @@ struct AlertsSignupView: View {
                 Section("Thresholds") {
                     Toggle("Alert on period", isOn: $thresholds.usePeriod)
                         .disabled(isSubmitting || isLoadingSubscriptions)
-                    HStack {
-                        Text("Period threshold")
-                        Spacer()
-                        Text("\(thresholds.periodSeconds, specifier: "%.0f") sec")
-                            .foregroundStyle(.secondary)
+                    if thresholds.usePeriod {
+                        HStack {
+                            Text("Greater than")
+                            Spacer()
+                            Text("\(thresholds.periodSeconds, specifier: "%.0f") sec")
+                                .foregroundStyle(.secondary)
+                        }
+                        Slider(value: $thresholds.periodSeconds, in: 5...30, step: 1)
+                            .disabled(isSubmitting || isLoadingSubscriptions)
                     }
-                    Slider(value: $thresholds.periodSeconds, in: 5...30, step: 1)
-                        .disabled(isSubmitting || isLoadingSubscriptions || !thresholds.usePeriod)
-                    Toggle("Alert on wave height", isOn: $thresholds.useWaveHeight)
+                    Toggle("Alert on swell size", isOn: $thresholds.useWaveHeight)
                         .disabled(isSubmitting || isLoadingSubscriptions)
-                    HStack {
-                        Text("Wave height")
-                        Spacer()
-                        Text("\(thresholds.minSwellHeight, specifier: "%.1f") ft")
-                            .foregroundStyle(.secondary)
+                    if thresholds.useWaveHeight {
+                        HStack {
+                            Text("Greater than")
+                            Spacer()
+                            Text("\(thresholds.minSwellHeight, specifier: "%.1f") ft")
+                                .foregroundStyle(.secondary)
+                        }
+                        Slider(value: $thresholds.minSwellHeight, in: 1...20, step: 0.5)
+                            .disabled(isSubmitting || isLoadingSubscriptions)
                     }
-                    Slider(value: $thresholds.minSwellHeight, in: 1...20, step: 0.5)
-                        .disabled(isSubmitting || isLoadingSubscriptions || !thresholds.useWaveHeight)
+
+                    DisclosureGroup("Wind") {
+                        Text("(only works for stations that have wind data)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Toggle("Alert on wind speed", isOn: $thresholds.useWindSpeed)
+                            .disabled(isSubmitting || isLoadingSubscriptions)
+                        if thresholds.useWindSpeed {
+                            HStack {
+                                Text("Greater than")
+                                Spacer()
+                                Text("\(thresholds.minWindSpeed, specifier: "%.0f") kt")
+                                    .foregroundStyle(.secondary)
+                            }
+                            Slider(value: $thresholds.minWindSpeed, in: 0...60, step: 1)
+                                .disabled(isSubmitting || isLoadingSubscriptions)
+                            HStack {
+                                Text("Less than")
+                                Spacer()
+                                Text("\(thresholds.maxWindSpeed, specifier: "%.0f") kt")
+                                    .foregroundStyle(.secondary)
+                            }
+                            Slider(value: $thresholds.maxWindSpeed, in: 0...80, step: 1)
+                                .disabled(isSubmitting || isLoadingSubscriptions)
+                        }
+
+                        Toggle("Alert on wind gust", isOn: $thresholds.useWindGust)
+                            .disabled(isSubmitting || isLoadingSubscriptions)
+                        if thresholds.useWindGust {
+                            HStack {
+                                Text("Greater than")
+                                Spacer()
+                                Text("\(thresholds.minWindGust, specifier: "%.0f") kt")
+                                    .foregroundStyle(.secondary)
+                            }
+                            Slider(value: $thresholds.minWindGust, in: 0...80, step: 1)
+                                .disabled(isSubmitting || isLoadingSubscriptions)
+                            HStack {
+                                Text("Less than")
+                                Spacer()
+                                Text("\(thresholds.maxWindGust, specifier: "%.0f") kt")
+                                    .foregroundStyle(.secondary)
+                            }
+                            Slider(value: $thresholds.maxWindGust, in: 0...100, step: 1)
+                                .disabled(isSubmitting || isLoadingSubscriptions)
+                        }
+                    }
                 }
 
-                Section("Notification frequency") {
+                Section("Max notification frequency") {
                     Picker("Notify me every", selection: $notificationFrequencyHours) {
                         Text("1 hour").tag(1)
                         Text("6 hours").tag(6)
@@ -525,7 +660,10 @@ struct AlertsSignupView: View {
                         isSubmitting ||
                         isLoadingSubscriptions ||
                         selectedStationIds.isEmpty ||
-                        !(thresholds.usePeriod || thresholds.useWaveHeight)
+                        !(thresholds.usePeriod ||
+                          thresholds.useWaveHeight ||
+                          thresholds.useWindSpeed ||
+                          thresholds.useWindGust)
                     )
                 }
 
@@ -566,28 +704,34 @@ struct AlertsSignupView: View {
                 }
             }
             .confirmationDialog(
-                "Delete subscription?",
+                "Delete alert?",
                 isPresented: Binding(
-                    get: { pendingDeleteStationId != nil },
+                    get: { pendingDeleteSubscription != nil },
                     set: { isPresented in
                         if !isPresented {
-                            pendingDeleteStationId = nil
+                            pendingDeleteSubscription = nil
                         }
                     }
                 )
             ) {
                 Button("Delete", role: .destructive) {
-                    if let stationId = pendingDeleteStationId {
+                    if let stationId = pendingDeleteSubscription?.stationId {
                         Task { await unsubscribe(stationId: stationId) }
                     }
-                    pendingDeleteStationId = nil
+                    pendingDeleteSubscription = nil
                 }
                 Button("Cancel", role: .cancel) {
-                    pendingDeleteStationId = nil
+                    pendingDeleteSubscription = nil
                 }
             } message: {
-                if let stationId = pendingDeleteStationId {
-                    Text("Remove alerts for station \(stationId)?")
+                if let subscription = pendingDeleteSubscription {
+                    let stationId = subscription.stationId
+                    let details = subscriptionSummary(for: subscription)
+                    if let details {
+                        Text("Delete alert for station \(stationId) (\(details))?")
+                    } else {
+                        Text("Delete alert for station \(stationId)?")
+                    }
                 }
             }
         }
@@ -623,27 +767,67 @@ struct AlertsSignupView: View {
         if subscription.useWaveHeight != false, let waveHeight = subscription.minSwellHeight {
             parts.append(String(format: "Wave ≥ %.1fft", waveHeight))
         }
+        if subscription.useWindSpeed != false,
+           let minWindSpeed = subscription.minWindSpeed,
+           let maxWindSpeed = subscription.maxWindSpeed {
+            parts.append(String(format: "Wind %.0f-%.0fkt", minWindSpeed, maxWindSpeed))
+        } else if subscription.useWindSpeed != false, let minWindSpeed = subscription.minWindSpeed {
+            parts.append(String(format: "Wind ≥ %.0fkt", minWindSpeed))
+        } else if subscription.useWindSpeed != false, let maxWindSpeed = subscription.maxWindSpeed {
+            parts.append(String(format: "Wind ≤ %.0fkt", maxWindSpeed))
+        }
+        if subscription.useWindGust != false,
+           let minWindGust = subscription.minWindGust,
+           let maxWindGust = subscription.maxWindGust {
+            parts.append(String(format: "Gust %.0f-%.0fkt", minWindGust, maxWindGust))
+        } else if subscription.useWindGust != false, let minWindGust = subscription.minWindGust {
+            parts.append(String(format: "Gust ≥ %.0fkt", minWindGust))
+        } else if subscription.useWindGust != false, let maxWindGust = subscription.maxWindGust {
+            parts.append(String(format: "Gust ≤ %.0fkt", maxWindGust))
+        }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     private func applySubscriptionDefaults(_ subscription: AlertsSubscription) {
-        let usePeriod = subscription.usePeriod ?? (subscription.minPeriod != nil)
+        let hasPeriod = subscription.usePeriod ?? (subscription.minPeriod != nil)
+        let hasWaveHeight = subscription.useWaveHeight ?? (subscription.minSwellHeight != nil)
+        let hasWindSpeed = subscription.useWindSpeed ?? (subscription.minWindSpeed != nil || subscription.maxWindSpeed != nil)
+        let hasWindGust = subscription.useWindGust ?? (subscription.minWindGust != nil || subscription.maxWindGust != nil)
+        let hasAnyThreshold = hasPeriod || hasWaveHeight || hasWindSpeed || hasWindGust
+
+        let usePeriod = hasAnyThreshold ? hasPeriod : false
         let periodSeconds = subscription.periodSeconds ?? Double(subscription.minPeriod ?? 20)
-        let useWaveHeight = subscription.useWaveHeight ?? false
+        let useWaveHeight = hasAnyThreshold ? hasWaveHeight : false
         let minSwellHeight = subscription.minSwellHeight ?? 4
+        let useWindSpeed = hasAnyThreshold ? hasWindSpeed : false
+        let minWindSpeed = subscription.minWindSpeed ?? 5
+        let maxWindSpeed = subscription.maxWindSpeed ?? 25
+        let useWindGust = hasAnyThreshold ? hasWindGust : false
+        let minWindGust = subscription.minWindGust ?? 10
+        let maxWindGust = subscription.maxWindGust ?? 35
         let notificationFrequencyHours = subscription.notificationFrequencyHours ?? 6
+
         thresholds = AlertThresholdSelection(
             usePeriod: usePeriod,
             periodSeconds: periodSeconds,
             useWaveHeight: useWaveHeight,
-            minSwellHeight: minSwellHeight
+            minSwellHeight: minSwellHeight,
+            useWindSpeed: useWindSpeed,
+            minWindSpeed: minWindSpeed,
+            maxWindSpeed: maxWindSpeed,
+            useWindGust: useWindGust,
+            minWindGust: minWindGust,
+            maxWindGust: maxWindGust
         )
         self.notificationFrequencyHours = notificationFrequencyHours
     }
 
     private func subscribe() async {
         guard !isSubmitting else { return }
-        guard thresholds.usePeriod || thresholds.useWaveHeight else {
+        guard thresholds.usePeriod ||
+              thresholds.useWaveHeight ||
+              thresholds.useWindSpeed ||
+              thresholds.useWindGust else {
             errorMessage = "Select at least one alert threshold."
             return
         }
@@ -675,6 +859,12 @@ struct AlertsSignupView: View {
                     periodSeconds: thresholds.periodSeconds,
                     useWaveHeight: thresholds.useWaveHeight,
                     minSwellHeight: thresholds.minSwellHeight,
+                    useWindSpeed: thresholds.useWindSpeed,
+                    minWindSpeed: thresholds.minWindSpeed,
+                    maxWindSpeed: thresholds.maxWindSpeed,
+                    useWindGust: thresholds.useWindGust,
+                    minWindGust: thresholds.minWindGust,
+                    maxWindGust: thresholds.maxWindGust,
                     notificationFrequencyHours: notificationFrequencyHours
                 )
             }
@@ -745,6 +935,12 @@ struct AlertsSignupView: View {
                 periodSeconds: values.periodSeconds,
                 useWaveHeight: values.useWaveHeight,
                 minSwellHeight: values.minSwellHeight,
+                useWindSpeed: values.useWindSpeed,
+                minWindSpeed: values.minWindSpeed,
+                maxWindSpeed: values.maxWindSpeed,
+                useWindGust: values.useWindGust,
+                minWindGust: values.minWindGust,
+                maxWindGust: values.maxWindGust,
                 notificationFrequencyHours: values.notificationFrequencyHours
             )
             await loadSubscriptions(allowWhileLoading: true)
@@ -797,17 +993,35 @@ private struct SubscriptionDetailView: View {
     }
 
     private static func initialValues(for subscription: AlertsSubscription) -> SubscriptionEditValues {
-        let usePeriod = subscription.usePeriod ?? (subscription.minPeriod != nil)
+        let hasPeriod = subscription.usePeriod ?? (subscription.minPeriod != nil)
+        let hasWaveHeight = subscription.useWaveHeight ?? (subscription.minSwellHeight != nil)
+        let hasWindSpeed = subscription.useWindSpeed ?? (subscription.minWindSpeed != nil || subscription.maxWindSpeed != nil)
+        let hasWindGust = subscription.useWindGust ?? (subscription.minWindGust != nil || subscription.maxWindGust != nil)
+        let hasAnyThreshold = hasPeriod || hasWaveHeight || hasWindSpeed || hasWindGust
+
+        let usePeriod = hasAnyThreshold ? hasPeriod : false
         let periodSeconds = subscription.periodSeconds ?? Double(subscription.minPeriod ?? 20)
-        let useWaveHeight = subscription.useWaveHeight ?? false
+        let useWaveHeight = hasAnyThreshold ? hasWaveHeight : false
         let minSwellHeight = subscription.minSwellHeight ?? 4
+        let useWindSpeed = hasAnyThreshold ? hasWindSpeed : false
+        let minWindSpeed = subscription.minWindSpeed ?? 5
+        let maxWindSpeed = subscription.maxWindSpeed ?? 25
+        let useWindGust = hasAnyThreshold ? hasWindGust : false
+        let minWindGust = subscription.minWindGust ?? 10
+        let maxWindGust = subscription.maxWindGust ?? 35
         let notificationFrequencyHours = subscription.notificationFrequencyHours ?? 6
         return SubscriptionEditValues(
             notificationFrequencyHours: notificationFrequencyHours,
             usePeriod: usePeriod,
             periodSeconds: periodSeconds,
             useWaveHeight: useWaveHeight,
-            minSwellHeight: minSwellHeight
+            minSwellHeight: minSwellHeight,
+            useWindSpeed: useWindSpeed,
+            minWindSpeed: minWindSpeed,
+            maxWindSpeed: maxWindSpeed,
+            useWindGust: useWindGust,
+            minWindGust: minWindGust,
+            maxWindGust: maxWindGust
         )
     }
 
@@ -828,7 +1042,7 @@ private struct SubscriptionDetailView: View {
                     }
                 }
 
-                Section("Notification frequency") {
+                Section("Max notification frequency") {
                     Picker("Notify me every", selection: $values.notificationFrequencyHours) {
                         Text("1 hour").tag(1)
                         Text("6 hours").tag(6)
@@ -840,31 +1054,81 @@ private struct SubscriptionDetailView: View {
 
                 Section("Thresholds") {
                     Toggle("Alert on period", isOn: $values.usePeriod)
-                    HStack {
-                        Text("Period threshold")
-                        Spacer()
-                        Text("\(values.periodSeconds, specifier: "%.0f") sec")
-                            .foregroundStyle(.secondary)
+                    if values.usePeriod {
+                        HStack {
+                            Text("Period threshold")
+                            Spacer()
+                            Text("\(values.periodSeconds, specifier: "%.0f") sec")
+                                .foregroundStyle(.secondary)
+                        }
+                        Slider(value: $values.periodSeconds, in: 5...30, step: 1)
                     }
-                    Slider(value: $values.periodSeconds, in: 5...30, step: 1)
-                        .disabled(!values.usePeriod)
 
                     Toggle("Alert on wave height", isOn: $values.useWaveHeight)
-                    HStack {
-                        Text("Wave height")
-                        Spacer()
-                        Text("\(values.minSwellHeight, specifier: "%.1f") ft")
-                            .foregroundStyle(.secondary)
+                    if values.useWaveHeight {
+                        HStack {
+                            Text("Wave height")
+                            Spacer()
+                            Text("\(values.minSwellHeight, specifier: "%.1f") ft")
+                                .foregroundStyle(.secondary)
+                        }
+                        Slider(value: $values.minSwellHeight, in: 1...20, step: 0.5)
                     }
-                    Slider(value: $values.minSwellHeight, in: 1...20, step: 0.5)
-                        .disabled(!values.useWaveHeight)
+
+                    DisclosureGroup("Wind") {
+                        Text("(only works for stations that have wind data)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Toggle("Alert on wind speed", isOn: $values.useWindSpeed)
+                        if values.useWindSpeed {
+                            HStack {
+                                Text("Min wind speed")
+                                Spacer()
+                                Text("\(values.minWindSpeed, specifier: "%.0f") kt")
+                                    .foregroundStyle(.secondary)
+                            }
+                            Slider(value: $values.minWindSpeed, in: 0...60, step: 1)
+                            HStack {
+                                Text("Max wind speed")
+                                Spacer()
+                                Text("\(values.maxWindSpeed, specifier: "%.0f") kt")
+                                    .foregroundStyle(.secondary)
+                            }
+                            Slider(value: $values.maxWindSpeed, in: 0...80, step: 1)
+                        }
+
+                        Toggle("Alert on wind gust", isOn: $values.useWindGust)
+                        if values.useWindGust {
+                            HStack {
+                                Text("Min wind gust")
+                                Spacer()
+                                Text("\(values.minWindGust, specifier: "%.0f") kt")
+                                    .foregroundStyle(.secondary)
+                            }
+                            Slider(value: $values.minWindGust, in: 0...80, step: 1)
+                            HStack {
+                                Text("Max wind gust")
+                                Spacer()
+                                Text("\(values.maxWindGust, specifier: "%.0f") kt")
+                                    .foregroundStyle(.secondary)
+                            }
+                            Slider(value: $values.maxWindGust, in: 0...100, step: 1)
+                        }
+                    }
                 }
 
                 Section {
                     Button("Update") {
                         onUpdate(values)
                     }
-                    .disabled(!hasChanges || isSubmitting || (!values.usePeriod && !values.useWaveHeight))
+                    .disabled(
+                        !hasChanges ||
+                        isSubmitting ||
+                        (!values.usePeriod &&
+                         !values.useWaveHeight &&
+                         !values.useWindSpeed &&
+                         !values.useWindGust)
+                    )
                 }
             }
             .navigationTitle("Subscription")
@@ -953,23 +1217,25 @@ struct AlertsView: View {
                     }
                     .pickerStyle(.segmented)
                     Toggle("Alert on period", isOn: $viewModel.usePeriodThreshold)
-                    HStack {
-                        Text("Period threshold")
-                        Spacer()
-                        Text("\(viewModel.periodSeconds, specifier: "%.0f") sec")
-                            .foregroundStyle(.secondary)
+                    if viewModel.usePeriodThreshold {
+                        HStack {
+                            Text("Period threshold")
+                            Spacer()
+                            Text("\(viewModel.periodSeconds, specifier: "%.0f") sec")
+                                .foregroundStyle(.secondary)
+                        }
+                        Slider(value: $viewModel.periodSeconds, in: 5...30, step: 1)
                     }
-                    Slider(value: $viewModel.periodSeconds, in: 5...30, step: 1)
-                        .disabled(!viewModel.usePeriodThreshold)
                     Toggle("Alert on wave height", isOn: $viewModel.useWaveThreshold)
-                    HStack {
-                        Text("Wave height")
-                        Spacer()
-                        Text("\(viewModel.minSwellHeight, specifier: "%.1f") ft")
-                            .foregroundStyle(.secondary)
+                    if viewModel.useWaveThreshold {
+                        HStack {
+                            Text("Wave height")
+                            Spacer()
+                            Text("\(viewModel.minSwellHeight, specifier: "%.1f") ft")
+                                .foregroundStyle(.secondary)
+                        }
+                        Slider(value: $viewModel.minSwellHeight, in: 1...20, step: 0.5)
                     }
-                    Slider(value: $viewModel.minSwellHeight, in: 1...20, step: 0.5)
-                        .disabled(!viewModel.useWaveThreshold)
                     Button("Subscribe") {
                         Task {
                             await viewModel.subscribe()
@@ -1212,6 +1478,12 @@ final class AlertsViewModel: ObservableObject {
                 periodSeconds: values.periodSeconds,
                 useWaveHeight: values.useWaveHeight,
                 minSwellHeight: values.minSwellHeight,
+                useWindSpeed: values.useWindSpeed,
+                minWindSpeed: values.minWindSpeed,
+                maxWindSpeed: values.maxWindSpeed,
+                useWindGust: values.useWindGust,
+                minWindGust: values.minWindGust,
+                maxWindGust: values.maxWindGust,
                 notificationFrequencyHours: values.notificationFrequencyHours
             )
             statusMessage = "Updated \(subscription.stationId)."
