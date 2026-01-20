@@ -125,10 +125,6 @@ struct AlertsSubscription: Identifiable, Decodable {
         case periodSeconds
         case useWaveHeight
         case waveHeightFeet
-        case notificationFrequencyHours = "notification_frequency"
-    }
-
-    private enum AlternateCodingKeys: String, CodingKey {
         case notificationFrequencyHours
     }
 
@@ -142,18 +138,10 @@ struct AlertsSubscription: Identifiable, Decodable {
         periodSeconds = try container.decodeIfPresent(Double.self, forKey: .periodSeconds)
         useWaveHeight = try container.decodeIfPresent(Bool.self, forKey: .useWaveHeight)
         waveHeightFeet = try container.decodeIfPresent(Double.self, forKey: .waveHeightFeet)
-        var decodedFrequency = try container.decodeIfPresent(
+        notificationFrequencyHours = try container.decodeIfPresent(
             Int.self,
             forKey: .notificationFrequencyHours
         )
-        if decodedFrequency == nil {
-            let altContainer = try decoder.container(keyedBy: AlternateCodingKeys.self)
-            decodedFrequency = try altContainer.decodeIfPresent(
-                Int.self,
-                forKey: .notificationFrequencyHours
-            )
-        }
-        notificationFrequencyHours = decodedFrequency
     }
 }
 
@@ -332,7 +320,7 @@ private struct SubscriptionPayload: Encodable {
         case periodSeconds
         case useWaveHeight
         case waveHeightFeet
-        case notificationFrequencyHours = "notification_frequency"
+        case notificationFrequencyHours
     }
 }
 
@@ -354,7 +342,7 @@ private struct SubscriptionUpdatePayload: Encodable {
         case periodSeconds
         case useWaveHeight
         case waveHeightFeet
-        case notificationFrequencyHours = "notification_frequency"
+        case notificationFrequencyHours
     }
 }
 
