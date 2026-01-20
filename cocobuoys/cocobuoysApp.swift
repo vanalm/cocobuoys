@@ -104,10 +104,65 @@ final class PushManager: NSObject, UNUserNotificationCenterDelegate {
 }
 
 struct AlertsSubscription: Identifiable, Decodable {
+    let subscriptionId: String?
     let stationId: String
     let minPeriod: Int?
+    let enabled: Bool?
+    let usePeriod: Bool?
+    let periodSeconds: Double?
+    let useWaveHeight: Bool?
+    let waveHeightFeet: Double?
+    let notificationFrequencyHours: Int?
 
-    var id: String { stationId }
+    var id: String { subscriptionId ?? stationId }
+
+    enum CodingKeys: String, CodingKey {
+        case subscriptionId = "_id"
+        case stationId
+        case minPeriod
+        case enabled
+        case usePeriod
+        case periodSeconds
+        case useWaveHeight
+        case waveHeightFeet
+        case notificationFrequencyHours = "notification_frequency"
+    }
+
+    private enum AlternateCodingKeys: String, CodingKey {
+        case notificationFrequencyHours
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        subscriptionId = try container.decodeIfPresent(String.self, forKey: .subscriptionId)
+        stationId = try container.decode(String.self, forKey: .stationId)
+        minPeriod = try container.decodeIfPresent(Int.self, forKey: .minPeriod)
+        enabled = try container.decodeIfPresent(Bool.self, forKey: .enabled)
+        usePeriod = try container.decodeIfPresent(Bool.self, forKey: .usePeriod)
+        periodSeconds = try container.decodeIfPresent(Double.self, forKey: .periodSeconds)
+        useWaveHeight = try container.decodeIfPresent(Bool.self, forKey: .useWaveHeight)
+        waveHeightFeet = try container.decodeIfPresent(Double.self, forKey: .waveHeightFeet)
+        var decodedFrequency = try container.decodeIfPresent(
+            Int.self,
+            forKey: .notificationFrequencyHours
+        )
+        if decodedFrequency == nil {
+            let altContainer = try decoder.container(keyedBy: AlternateCodingKeys.self)
+            decodedFrequency = try altContainer.decodeIfPresent(
+                Int.self,
+                forKey: .notificationFrequencyHours
+            )
+        }
+        notificationFrequencyHours = decodedFrequency
+    }
+}
+
+struct SubscriptionEditValues: Equatable {
+    var notificationFrequencyHours: Int
+    var usePeriod: Bool
+    var periodSeconds: Double
+    var useWaveHeight: Bool
+    var waveHeightFeet: Double
 }
 
 enum AlertsServiceError: Error, LocalizedError {
@@ -160,7 +215,8 @@ final class AlertsService {
                    usePeriod: Bool? = nil,
                    periodSeconds: Double? = nil,
                    useWaveHeight: Bool? = nil,
-                   waveHeightFeet: Double? = nil) async throws {
+                   waveHeightFeet: Double? = nil,
+                   notificationFrequencyHours: Int? = nil) async throws {
         let payload = SubscriptionPayload(
             deviceToken: deviceToken,
             stationId: stationId,
@@ -168,9 +224,36 @@ final class AlertsService {
             usePeriod: usePeriod,
             periodSeconds: periodSeconds,
             useWaveHeight: useWaveHeight,
-            waveHeightFeet: waveHeightFeet
+            waveHeightFeet: waveHeightFeet,
+            notificationFrequencyHours: notificationFrequencyHours
         )
         _ = try await performRequest(path: "/devices/subscribe", method: "POST", body: payload)
+    }
+
+    func updateSubscription(deviceToken: String,
+                            subscriptionId: String,
+                            stationId: String,
+                            minPeriod: Int?,
+                            usePeriod: Bool?,
+                            periodSeconds: Double?,
+                            useWaveHeight: Bool?,
+                            waveHeightFeet: Double?,
+                            notificationFrequencyHours: Int?) async throws {
+        let payload = SubscriptionUpdatePayload(
+            deviceToken: deviceToken,
+            stationId: stationId,
+            minPeriod: minPeriod,
+            usePeriod: usePeriod,
+            periodSeconds: periodSeconds,
+            useWaveHeight: useWaveHeight,
+            waveHeightFeet: waveHeightFeet,
+            notificationFrequencyHours: notificationFrequencyHours
+        )
+        _ = try await performRequest(
+            path: "/devices/subscription/\(subscriptionId)",
+            method: "PUT",
+            body: payload
+        )
     }
 
     func unsubscribe(deviceToken: String, stationId: String) async throws {
@@ -181,7 +264,8 @@ final class AlertsService {
             usePeriod: nil,
             periodSeconds: nil,
             useWaveHeight: nil,
-            waveHeightFeet: nil
+            waveHeightFeet: nil,
+            notificationFrequencyHours: nil
         )
         _ = try await performRequest(path: "/devices/unsubscribe", method: "DELETE", body: payload)
     }
@@ -238,6 +322,40 @@ private struct SubscriptionPayload: Encodable {
     let periodSeconds: Double?
     let useWaveHeight: Bool?
     let waveHeightFeet: Double?
+    let notificationFrequencyHours: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case deviceToken
+        case stationId
+        case minPeriod
+        case usePeriod
+        case periodSeconds
+        case useWaveHeight
+        case waveHeightFeet
+        case notificationFrequencyHours = "notification_frequency"
+    }
+}
+
+private struct SubscriptionUpdatePayload: Encodable {
+    let deviceToken: String
+    let stationId: String
+    let minPeriod: Int?
+    let usePeriod: Bool?
+    let periodSeconds: Double?
+    let useWaveHeight: Bool?
+    let waveHeightFeet: Double?
+    let notificationFrequencyHours: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case deviceToken
+        case stationId
+        case minPeriod
+        case usePeriod
+        case periodSeconds
+        case useWaveHeight
+        case waveHeightFeet
+        case notificationFrequencyHours = "notification_frequency"
+    }
 }
 
 private struct SubscriptionsResponse: Decodable {
@@ -264,6 +382,9 @@ struct AlertsSignupView: View {
     @State private var selectedStationIds: Set<String>
     @State private var manualStationId = ""
     @State private var thresholds = AlertThresholdSelection()
+    @State private var notificationFrequencyHours = 6
+    @State private var selectedSubscription: AlertsSubscription?
+    @State private var pendingDeleteStationId: String?
     @State private var isSubmitting = false
     @State private var isLoadingSubscriptions = false
     @State private var existingSubscriptions: [AlertsSubscription] = []
@@ -299,40 +420,40 @@ struct AlertsSignupView: View {
                     .disabled(isSubmitting)
                 }
 
-                if stations.isEmpty {
-                    Section("Station") {
-                        TextField("Enter buoy station ID", text: $manualStationId)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .disabled(isSubmitting || isLoadingSubscriptions)
-                        Button("Add Station") {
-                            let trimmed = manualStationId.trimmingCharacters(in: .whitespacesAndNewlines)
-                            guard !trimmed.isEmpty else { return }
-                            selectedStationIds.insert(trimmed)
-                            manualStationId = ""
-                        }
-                        .disabled(
-                            isSubmitting ||
-                            isLoadingSubscriptions ||
-                            manualStationId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        )
-                        if !selectedStationIds.isEmpty {
-                            ForEach(selectedStationIds.sorted(), id: \.self) { stationId in
-                                HStack {
-                                    Text(stationId)
-                                    Spacer()
-                                    Button(role: .destructive) {
-                                        selectedStationIds.remove(stationId)
-                                    } label: {
-                                        Image(systemName: "xmark.circle.fill")
-                                    }
-                                    .disabled(isSubmitting || isLoadingSubscriptions)
+                Section("Add station") {
+                    TextField("Enter buoy station ID", text: $manualStationId)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .disabled(isSubmitting || isLoadingSubscriptions)
+                    Button("Add Station") {
+                        let trimmed = manualStationId.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !trimmed.isEmpty else { return }
+                        selectedStationIds.insert(trimmed)
+                        manualStationId = ""
+                    }
+                    .disabled(
+                        isSubmitting ||
+                        isLoadingSubscriptions ||
+                        manualStationId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    )
+                    if !manualStationIds.isEmpty {
+                        ForEach(manualStationIds, id: \.self) { stationId in
+                            HStack {
+                                Text(stationId)
+                                Spacer()
+                                Button(role: .destructive) {
+                                    selectedStationIds.remove(stationId)
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
                                 }
+                                .disabled(isSubmitting || isLoadingSubscriptions)
                             }
                         }
                     }
-                } else if stations.count > 1 {
-                    Section("Stations") {
+                }
+
+                if stations.count > 1 {
+                    Section("Visible Stations") {
                         ForEach(stations) { station in
                             Toggle(station.name, isOn: bindingForStation(station.id))
                                 .disabled(isSubmitting || isLoadingSubscriptions)
@@ -348,14 +469,26 @@ struct AlertsSignupView: View {
                     Section("Current subscriptions") {
                         ForEach(existingSubscriptions) { subscription in
                             HStack {
-                                Text(subscription.stationId)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(subscription.stationId)
+                                        .font(.headline)
+                                    if let summary = subscriptionSummary(for: subscription) {
+                                        Text(summary)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
                                 Spacer()
                                 Button(role: .destructive) {
-                                    Task { await unsubscribe(stationId: subscription.stationId) }
+                                    pendingDeleteStationId = subscription.stationId
                                 } label: {
-                                    Image(systemName: "bell.slash")
+                                    Image(systemName: "trash")
                                 }
                                 .disabled(isSubmitting || isLoadingSubscriptions)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                selectedSubscription = subscription
                             }
                         }
                     }
@@ -382,6 +515,17 @@ struct AlertsSignupView: View {
                     }
                     Slider(value: $thresholds.waveHeightFeet, in: 1...20, step: 0.5)
                         .disabled(isSubmitting || isLoadingSubscriptions || !thresholds.useWaveHeight)
+                }
+
+                Section("Notification frequency") {
+                    Picker("Notify me every", selection: $notificationFrequencyHours) {
+                        Text("1 hour").tag(1)
+                        Text("6 hours").tag(6)
+                        Text("12 hours").tag(12)
+                        Text("24 hours").tag(24)
+                    }
+                    .pickerStyle(.segmented)
+                    .disabled(isSubmitting || isLoadingSubscriptions)
                 }
 
                 Section {
@@ -422,6 +566,41 @@ struct AlertsSignupView: View {
             .task {
                 await loadSubscriptions()
             }
+            .sheet(item: $selectedSubscription) { subscription in
+                SubscriptionDetailView(
+                    subscription: subscription,
+                    isSubmitting: isSubmitting
+                ) { values in
+                    Task {
+                        await updateSubscription(subscription: subscription, values: values)
+                    }
+                }
+            }
+            .confirmationDialog(
+                "Delete subscription?",
+                isPresented: Binding(
+                    get: { pendingDeleteStationId != nil },
+                    set: { isPresented in
+                        if !isPresented {
+                            pendingDeleteStationId = nil
+                        }
+                    }
+                )
+            ) {
+                Button("Delete", role: .destructive) {
+                    if let stationId = pendingDeleteStationId {
+                        Task { await unsubscribe(stationId: stationId) }
+                    }
+                    pendingDeleteStationId = nil
+                }
+                Button("Cancel", role: .cancel) {
+                    pendingDeleteStationId = nil
+                }
+            } message: {
+                if let stationId = pendingDeleteStationId {
+                    Text("Remove alerts for station \(stationId)?")
+                }
+            }
         }
     }
 
@@ -438,6 +617,26 @@ struct AlertsSignupView: View {
         )
     }
 
+    private var manualStationIds: [String] {
+        let stationSet = Set(stations.map(\.id))
+        return selectedStationIds.filter { !stationSet.contains($0) }.sorted()
+    }
+
+    private func subscriptionSummary(for subscription: AlertsSubscription) -> String? {
+        var parts: [String] = []
+        if let frequency = subscription.notificationFrequencyHours {
+            parts.append("Every \(frequency)h")
+        }
+        let usePeriod = subscription.usePeriod ?? (subscription.minPeriod != nil)
+        if usePeriod, let minPeriod = subscription.minPeriod {
+            parts.append("Period ≥ \(minPeriod)s")
+        }
+        if subscription.useWaveHeight != false, let waveHeight = subscription.waveHeightFeet {
+            parts.append(String(format: "Wave ≥ %.1fft", waveHeight))
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
     private func subscribe() async {
         guard !isSubmitting else { return }
         guard thresholds.usePeriod || thresholds.useWaveHeight else {
@@ -448,8 +647,7 @@ struct AlertsSignupView: View {
             errorMessage = "Enable alerts to get a device token first."
             return
         }
-        let targetStations = stations.filter { selectedStationIds.contains($0.id) }
-        guard !targetStations.isEmpty else {
+        guard !selectedStationIds.isEmpty else {
             errorMessage = "Select at least one station."
             return
         }
@@ -472,7 +670,8 @@ struct AlertsSignupView: View {
                     usePeriod: thresholds.usePeriod,
                     periodSeconds: thresholds.periodSeconds,
                     useWaveHeight: thresholds.useWaveHeight,
-                    waveHeightFeet: thresholds.waveHeightFeet
+                    waveHeightFeet: thresholds.waveHeightFeet,
+                    notificationFrequencyHours: notificationFrequencyHours
                 )
             }
 
@@ -508,6 +707,40 @@ struct AlertsSignupView: View {
         isSubmitting = false
     }
 
+    private func updateSubscription(subscription: AlertsSubscription, values: SubscriptionEditValues) async {
+        guard !isSubmitting else { return }
+        guard let token = PushManager.shared.deviceToken else {
+            errorMessage = "Enable alerts to get a device token first."
+            return
+        }
+        guard let subscriptionId = subscription.subscriptionId else {
+            errorMessage = "Update requires a subscription id from the backend."
+            return
+        }
+        isSubmitting = true
+        errorMessage = nil
+        let minPeriod = values.usePeriod ? Int(values.periodSeconds.rounded()) : nil
+        let service = AlertsService()
+        do {
+            try await service.updateSubscription(
+                deviceToken: token,
+                subscriptionId: subscriptionId,
+                stationId: subscription.stationId,
+                minPeriod: minPeriod,
+                usePeriod: values.usePeriod,
+                periodSeconds: values.periodSeconds,
+                useWaveHeight: values.useWaveHeight,
+                waveHeightFeet: values.waveHeightFeet,
+                notificationFrequencyHours: values.notificationFrequencyHours
+            )
+            await loadSubscriptions(allowWhileLoading: true)
+            statusMessage = "Updated \(subscription.stationId)."
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+        isSubmitting = false
+    }
+
     private func loadSubscriptions(allowWhileLoading: Bool = false) async {
         guard let token = PushManager.shared.deviceToken else {
             existingSubscriptions = []
@@ -529,9 +762,112 @@ struct AlertsSignupView: View {
     }
 }
 
+private struct SubscriptionDetailView: View {
+    let subscription: AlertsSubscription
+    let isSubmitting: Bool
+    let onUpdate: (SubscriptionEditValues) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var values: SubscriptionEditValues
+    private let initialValues: SubscriptionEditValues
+
+    init(subscription: AlertsSubscription,
+         isSubmitting: Bool,
+         onUpdate: @escaping (SubscriptionEditValues) -> Void) {
+        self.subscription = subscription
+        self.isSubmitting = isSubmitting
+        self.onUpdate = onUpdate
+        let initial = SubscriptionDetailView.initialValues(for: subscription)
+        _values = State(initialValue: initial)
+        self.initialValues = initial
+    }
+
+    private static func initialValues(for subscription: AlertsSubscription) -> SubscriptionEditValues {
+        let usePeriod = subscription.usePeriod ?? (subscription.minPeriod != nil)
+        let periodSeconds = subscription.periodSeconds ?? Double(subscription.minPeriod ?? 20)
+        let useWaveHeight = subscription.useWaveHeight ?? false
+        let waveHeightFeet = subscription.waveHeightFeet ?? 4
+        let notificationFrequencyHours = subscription.notificationFrequencyHours ?? 6
+        return SubscriptionEditValues(
+            notificationFrequencyHours: notificationFrequencyHours,
+            usePeriod: usePeriod,
+            periodSeconds: periodSeconds,
+            useWaveHeight: useWaveHeight,
+            waveHeightFeet: waveHeightFeet
+        )
+    }
+
+    private var hasChanges: Bool {
+        values != initialValues
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Station") {
+                    Text(subscription.stationId)
+                        .font(.headline)
+                    if let minPeriod = subscription.minPeriod {
+                        Text("Current period threshold: \(minPeriod)s")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section("Notification frequency") {
+                    Picker("Notify me every", selection: $values.notificationFrequencyHours) {
+                        Text("1 hour").tag(1)
+                        Text("6 hours").tag(6)
+                        Text("12 hours").tag(12)
+                        Text("24 hours").tag(24)
+                    }
+                    .pickerStyle(.segmented)
+                }
+
+                Section("Thresholds") {
+                    Toggle("Alert on period", isOn: $values.usePeriod)
+                    HStack {
+                        Text("Period threshold")
+                        Spacer()
+                        Text("\(values.periodSeconds, specifier: "%.0f") sec")
+                            .foregroundStyle(.secondary)
+                    }
+                    Slider(value: $values.periodSeconds, in: 5...30, step: 1)
+                        .disabled(!values.usePeriod)
+
+                    Toggle("Alert on wave height", isOn: $values.useWaveHeight)
+                    HStack {
+                        Text("Wave height")
+                        Spacer()
+                        Text("\(values.waveHeightFeet, specifier: "%.1f") ft")
+                            .foregroundStyle(.secondary)
+                    }
+                    Slider(value: $values.waveHeightFeet, in: 1...20, step: 0.5)
+                        .disabled(!values.useWaveHeight)
+                }
+
+                Section {
+                    Button("Update") {
+                        onUpdate(values)
+                    }
+                    .disabled(!hasChanges || isSubmitting || (!values.usePeriod && !values.useWaveHeight))
+                }
+            }
+            .navigationTitle("Subscription")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
 struct AlertsView: View {
     @StateObject private var viewModel = AlertsViewModel()
     @Environment(\.dismiss) private var dismiss
+    @State private var pendingDeleteStationId: String?
+    @State private var selectedSubscription: AlertsSubscription?
 
     var body: some View {
         NavigationStack {
@@ -568,21 +904,23 @@ struct AlertsView: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(subscription.stationId)
                                         .font(.headline)
-                                    if let minPeriod = subscription.minPeriod {
-                                        Text("Period: \(minPeriod) sec")
+                                    if let summary = subscriptionSummary(for: subscription) {
+                                        Text(summary)
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
                                 }
                                 Spacer()
                                 Button(role: .destructive) {
-                                    Task {
-                                        await viewModel.unsubscribe(stationId: subscription.stationId)
-                                    }
+                                    pendingDeleteStationId = subscription.stationId
                                 } label: {
-                                    Image(systemName: "bell.slash")
+                                    Image(systemName: "trash")
                                 }
                                 .disabled(viewModel.isLoading)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                selectedSubscription = subscription
                             }
                         }
                     }
@@ -592,6 +930,13 @@ struct AlertsView: View {
                     TextField("Station ID", text: $viewModel.stationIdInput)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                    Picker("Notify me every", selection: $viewModel.notificationFrequencyHours) {
+                        Text("1 hour").tag(1)
+                        Text("6 hours").tag(6)
+                        Text("12 hours").tag(12)
+                        Text("24 hours").tag(24)
+                    }
+                    .pickerStyle(.segmented)
                     Toggle("Alert on period", isOn: $viewModel.usePeriodThreshold)
                     HStack {
                         Text("Period threshold")
@@ -665,7 +1010,59 @@ struct AlertsView: View {
                     await viewModel.loadSubscriptions()
                 }
             }
+            .sheet(item: $selectedSubscription) { subscription in
+                SubscriptionDetailView(
+                    subscription: subscription,
+                    isSubmitting: viewModel.isLoading
+                ) { values in
+                    Task {
+                        await viewModel.update(subscription: subscription, values: values)
+                    }
+                }
+            }
+            .confirmationDialog(
+                "Delete subscription?",
+                isPresented: Binding(
+                    get: { pendingDeleteStationId != nil },
+                    set: { isPresented in
+                        if !isPresented {
+                            pendingDeleteStationId = nil
+                        }
+                    }
+                )
+            ) {
+                Button("Delete", role: .destructive) {
+                    if let stationId = pendingDeleteStationId {
+                        Task {
+                            await viewModel.unsubscribe(stationId: stationId)
+                        }
+                    }
+                    pendingDeleteStationId = nil
+                }
+                Button("Cancel", role: .cancel) {
+                    pendingDeleteStationId = nil
+                }
+            } message: {
+                if let stationId = pendingDeleteStationId {
+                    Text("Remove alerts for station \(stationId)?")
+                }
+            }
         }
+    }
+
+    private func subscriptionSummary(for subscription: AlertsSubscription) -> String? {
+        var parts: [String] = []
+        if let frequency = subscription.notificationFrequencyHours {
+            parts.append("Every \(frequency)h")
+        }
+        let usePeriod = subscription.usePeriod ?? (subscription.minPeriod != nil)
+        if usePeriod, let minPeriod = subscription.minPeriod {
+            parts.append("Period ≥ \(minPeriod)s")
+        }
+        if subscription.useWaveHeight != false, let waveHeight = subscription.waveHeightFeet {
+            parts.append(String(format: "Wave ≥ %.1fft", waveHeight))
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 }
 
@@ -674,6 +1071,7 @@ final class AlertsViewModel: ObservableObject {
     @Published var deviceToken: String?
     @Published var subscriptions: [AlertsSubscription] = []
     @Published var stationIdInput = ""
+    @Published var notificationFrequencyHours = 6
     @Published var usePeriodThreshold = true
     @Published var periodSeconds = 15.0
     @Published var useWaveThreshold = false
@@ -737,7 +1135,8 @@ final class AlertsViewModel: ObservableObject {
                 usePeriod: usePeriodThreshold,
                 periodSeconds: periodSeconds,
                 useWaveHeight: useWaveThreshold,
-                waveHeightFeet: waveHeightFeet
+                waveHeightFeet: waveHeightFeet,
+                notificationFrequencyHours: notificationFrequencyHours
             )
             stationIdInput = ""
             statusMessage = "Subscribed to \(stationId)."
@@ -759,6 +1158,39 @@ final class AlertsViewModel: ObservableObject {
         do {
             try await service.unsubscribe(deviceToken: token, stationId: stationId)
             statusMessage = "Removed \(stationId)."
+            await loadSubscriptions(allowWhileLoading: true)
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    func update(subscription: AlertsSubscription, values: SubscriptionEditValues) async {
+        guard let token = deviceToken else {
+            errorMessage = "Enable alerts to get a device token first."
+            return
+        }
+        guard !isLoading else { return }
+        guard let subscriptionId = subscription.subscriptionId else {
+            errorMessage = "Update requires a subscription id from the backend."
+            return
+        }
+        isLoading = true
+        errorMessage = nil
+        let minPeriod = values.usePeriod ? Int(values.periodSeconds.rounded()) : nil
+        do {
+            try await service.updateSubscription(
+                deviceToken: token,
+                subscriptionId: subscriptionId,
+                stationId: subscription.stationId,
+                minPeriod: minPeriod,
+                usePeriod: values.usePeriod,
+                periodSeconds: values.periodSeconds,
+                useWaveHeight: values.useWaveHeight,
+                waveHeightFeet: values.waveHeightFeet,
+                notificationFrequencyHours: values.notificationFrequencyHours
+            )
+            statusMessage = "Updated \(subscription.stationId)."
             await loadSubscriptions(allowWhileLoading: true)
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription

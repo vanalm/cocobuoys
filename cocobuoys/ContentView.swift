@@ -141,7 +141,7 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showBulkAlerts) {
             AlertsSignupView(
-                title: "Alerts for Visible Stations",
+                title: "Alerts",
                 stations: viewModel.visibleBuoysForAlerts()
             )
         }
