@@ -111,7 +111,7 @@ struct AlertsSubscription: Identifiable, Decodable {
     let usePeriod: Bool?
     let periodSeconds: Double?
     let useWaveHeight: Bool?
-    let waveHeightFeet: Double?
+    let minSwellHeight: Double?
     let notificationFrequencyHours: Int?
 
     var id: String { subscriptionId ?? stationId }
@@ -124,7 +124,7 @@ struct AlertsSubscription: Identifiable, Decodable {
         case usePeriod
         case periodSeconds
         case useWaveHeight
-        case waveHeightFeet
+        case minSwellHeight
         case notificationFrequencyHours
     }
 
@@ -137,7 +137,7 @@ struct AlertsSubscription: Identifiable, Decodable {
         usePeriod = try container.decodeIfPresent(Bool.self, forKey: .usePeriod)
         periodSeconds = try container.decodeIfPresent(Double.self, forKey: .periodSeconds)
         useWaveHeight = try container.decodeIfPresent(Bool.self, forKey: .useWaveHeight)
-        waveHeightFeet = try container.decodeIfPresent(Double.self, forKey: .waveHeightFeet)
+        minSwellHeight = try container.decodeIfPresent(Double.self, forKey: .minSwellHeight)
         notificationFrequencyHours = try container.decodeIfPresent(
             Int.self,
             forKey: .notificationFrequencyHours
@@ -150,7 +150,7 @@ struct SubscriptionEditValues: Equatable {
     var usePeriod: Bool
     var periodSeconds: Double
     var useWaveHeight: Bool
-    var waveHeightFeet: Double
+    var minSwellHeight: Double
 }
 
 enum AlertsServiceError: Error, LocalizedError {
@@ -203,7 +203,7 @@ final class AlertsService {
                    usePeriod: Bool? = nil,
                    periodSeconds: Double? = nil,
                    useWaveHeight: Bool? = nil,
-                   waveHeightFeet: Double? = nil,
+                   minSwellHeight: Double? = nil,
                    notificationFrequencyHours: Int? = nil) async throws {
         let payload = SubscriptionPayload(
             deviceToken: deviceToken,
@@ -212,7 +212,7 @@ final class AlertsService {
             usePeriod: usePeriod,
             periodSeconds: periodSeconds,
             useWaveHeight: useWaveHeight,
-            waveHeightFeet: waveHeightFeet,
+            minSwellHeight: minSwellHeight,
             notificationFrequencyHours: notificationFrequencyHours
         )
         _ = try await performRequest(path: "/devices/subscribe", method: "POST", body: payload)
@@ -225,7 +225,7 @@ final class AlertsService {
                             usePeriod: Bool?,
                             periodSeconds: Double?,
                             useWaveHeight: Bool?,
-                            waveHeightFeet: Double?,
+                            minSwellHeight: Double?,
                             notificationFrequencyHours: Int?) async throws {
         let payload = SubscriptionUpdatePayload(
             deviceToken: deviceToken,
@@ -234,7 +234,7 @@ final class AlertsService {
             usePeriod: usePeriod,
             periodSeconds: periodSeconds,
             useWaveHeight: useWaveHeight,
-            waveHeightFeet: waveHeightFeet,
+            minSwellHeight: minSwellHeight,
             notificationFrequencyHours: notificationFrequencyHours
         )
         _ = try await performRequest(
@@ -252,7 +252,7 @@ final class AlertsService {
             usePeriod: nil,
             periodSeconds: nil,
             useWaveHeight: nil,
-            waveHeightFeet: nil,
+            minSwellHeight: nil,
             notificationFrequencyHours: nil
         )
         _ = try await performRequest(path: "/devices/unsubscribe", method: "DELETE", body: payload)
@@ -309,7 +309,7 @@ private struct SubscriptionPayload: Encodable {
     let usePeriod: Bool?
     let periodSeconds: Double?
     let useWaveHeight: Bool?
-    let waveHeightFeet: Double?
+    let minSwellHeight: Double?
     let notificationFrequencyHours: Int?
 
     enum CodingKeys: String, CodingKey {
@@ -319,7 +319,7 @@ private struct SubscriptionPayload: Encodable {
         case usePeriod
         case periodSeconds
         case useWaveHeight
-        case waveHeightFeet
+        case minSwellHeight
         case notificationFrequencyHours
     }
 }
@@ -331,7 +331,7 @@ private struct SubscriptionUpdatePayload: Encodable {
     let usePeriod: Bool?
     let periodSeconds: Double?
     let useWaveHeight: Bool?
-    let waveHeightFeet: Double?
+    let minSwellHeight: Double?
     let notificationFrequencyHours: Int?
 
     enum CodingKeys: String, CodingKey {
@@ -341,7 +341,7 @@ private struct SubscriptionUpdatePayload: Encodable {
         case usePeriod
         case periodSeconds
         case useWaveHeight
-        case waveHeightFeet
+        case minSwellHeight
         case notificationFrequencyHours
     }
 }
@@ -360,7 +360,7 @@ private struct AlertThresholdSelection {
     var usePeriod: Bool = true
     var periodSeconds: Double = 15
     var useWaveHeight: Bool = false
-    var waveHeightFeet: Double = 4
+    var minSwellHeight: Double = 4
 }
 
 struct AlertsSignupView: View {
@@ -498,10 +498,10 @@ struct AlertsSignupView: View {
                     HStack {
                         Text("Wave height")
                         Spacer()
-                        Text("\(thresholds.waveHeightFeet, specifier: "%.1f") ft")
+                        Text("\(thresholds.minSwellHeight, specifier: "%.1f") ft")
                             .foregroundStyle(.secondary)
                     }
-                    Slider(value: $thresholds.waveHeightFeet, in: 1...20, step: 0.5)
+                    Slider(value: $thresholds.minSwellHeight, in: 1...20, step: 0.5)
                         .disabled(isSubmitting || isLoadingSubscriptions || !thresholds.useWaveHeight)
                 }
 
@@ -619,7 +619,7 @@ struct AlertsSignupView: View {
         if usePeriod, let minPeriod = subscription.minPeriod {
             parts.append("Period ≥ \(minPeriod)s")
         }
-        if subscription.useWaveHeight != false, let waveHeight = subscription.waveHeightFeet {
+        if subscription.useWaveHeight != false, let waveHeight = subscription.minSwellHeight {
             parts.append(String(format: "Wave ≥ %.1fft", waveHeight))
         }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
@@ -655,10 +655,7 @@ struct AlertsSignupView: View {
                     deviceToken: token,
                     stationId: stationId,
                     minPeriod: thresholds.usePeriod ? Int(thresholds.periodSeconds.rounded()) : nil,
-                    usePeriod: thresholds.usePeriod,
-                    periodSeconds: thresholds.periodSeconds,
-                    useWaveHeight: thresholds.useWaveHeight,
-                    waveHeightFeet: thresholds.waveHeightFeet,
+                    minSwellHeight: thresholds.minSwellHeight,
                     notificationFrequencyHours: notificationFrequencyHours
                 )
             }
@@ -718,7 +715,7 @@ struct AlertsSignupView: View {
                 usePeriod: values.usePeriod,
                 periodSeconds: values.periodSeconds,
                 useWaveHeight: values.useWaveHeight,
-                waveHeightFeet: values.waveHeightFeet,
+                minSwellHeight: values.minSwellHeight,
                 notificationFrequencyHours: values.notificationFrequencyHours
             )
             await loadSubscriptions(allowWhileLoading: true)
@@ -774,14 +771,14 @@ private struct SubscriptionDetailView: View {
         let usePeriod = subscription.usePeriod ?? (subscription.minPeriod != nil)
         let periodSeconds = subscription.periodSeconds ?? Double(subscription.minPeriod ?? 20)
         let useWaveHeight = subscription.useWaveHeight ?? false
-        let waveHeightFeet = subscription.waveHeightFeet ?? 4
+        let minSwellHeight = subscription.minSwellHeight ?? 4
         let notificationFrequencyHours = subscription.notificationFrequencyHours ?? 6
         return SubscriptionEditValues(
             notificationFrequencyHours: notificationFrequencyHours,
             usePeriod: usePeriod,
             periodSeconds: periodSeconds,
             useWaveHeight: useWaveHeight,
-            waveHeightFeet: waveHeightFeet
+            minSwellHeight: minSwellHeight
         )
     }
 
@@ -827,10 +824,10 @@ private struct SubscriptionDetailView: View {
                     HStack {
                         Text("Wave height")
                         Spacer()
-                        Text("\(values.waveHeightFeet, specifier: "%.1f") ft")
+                        Text("\(values.minSwellHeight, specifier: "%.1f") ft")
                             .foregroundStyle(.secondary)
                     }
-                    Slider(value: $values.waveHeightFeet, in: 1...20, step: 0.5)
+                    Slider(value: $values.minSwellHeight, in: 1...20, step: 0.5)
                         .disabled(!values.useWaveHeight)
                 }
 
@@ -938,10 +935,10 @@ struct AlertsView: View {
                     HStack {
                         Text("Wave height")
                         Spacer()
-                        Text("\(viewModel.waveHeightFeet, specifier: "%.1f") ft")
+                        Text("\(viewModel.minSwellHeight, specifier: "%.1f") ft")
                             .foregroundStyle(.secondary)
                     }
-                    Slider(value: $viewModel.waveHeightFeet, in: 1...20, step: 0.5)
+                    Slider(value: $viewModel.minSwellHeight, in: 1...20, step: 0.5)
                         .disabled(!viewModel.useWaveThreshold)
                     Button("Subscribe") {
                         Task {
@@ -1047,7 +1044,7 @@ struct AlertsView: View {
         if usePeriod, let minPeriod = subscription.minPeriod {
             parts.append("Period ≥ \(minPeriod)s")
         }
-        if subscription.useWaveHeight != false, let waveHeight = subscription.waveHeightFeet {
+        if subscription.useWaveHeight != false, let waveHeight = subscription.minSwellHeight {
             parts.append(String(format: "Wave ≥ %.1fft", waveHeight))
         }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
@@ -1063,7 +1060,7 @@ final class AlertsViewModel: ObservableObject {
     @Published var usePeriodThreshold = true
     @Published var periodSeconds = 15.0
     @Published var useWaveThreshold = false
-    @Published var waveHeightFeet = 4.0
+    @Published var minSwellHeight = 4.0
     @Published var testTitleInput = "Test"
     @Published var testBodyInput = "This is a test notification"
     @Published var isLoading = false
@@ -1123,7 +1120,7 @@ final class AlertsViewModel: ObservableObject {
                 usePeriod: usePeriodThreshold,
                 periodSeconds: periodSeconds,
                 useWaveHeight: useWaveThreshold,
-                waveHeightFeet: waveHeightFeet,
+                minSwellHeight: minSwellHeight,
                 notificationFrequencyHours: notificationFrequencyHours
             )
             stationIdInput = ""
@@ -1175,7 +1172,7 @@ final class AlertsViewModel: ObservableObject {
                 usePeriod: values.usePeriod,
                 periodSeconds: values.periodSeconds,
                 useWaveHeight: values.useWaveHeight,
-                waveHeightFeet: values.waveHeightFeet,
+                minSwellHeight: values.minSwellHeight,
                 notificationFrequencyHours: values.notificationFrequencyHours
             )
             statusMessage = "Updated \(subscription.stationId)."
