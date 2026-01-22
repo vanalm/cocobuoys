@@ -269,23 +269,20 @@ final class MapScreenViewModel: ObservableObject {
         StationColorScale.waveHeightColor(for: height)
     }
     
-    private func waveMarkerSize(for period: Double?) -> CGFloat {
-        guard let period else { return 15 }
-        if period < 8 { return 15 }
-        if period < 9 { return 19 }
-        if period < 10 { return 25 }
-        if period < 10 { return 29 }
-        if period < 11 { return 33 }
-        if period < 12 { return 37 }
-        if period < 13 { return 41 }
-        if period < 14 { return 45 }
-        if period < 16 { return 49 }
-        if period < 17 { return 53 }
-        if period < 18 { return 57 }
-        if period < 19 { return 61 }
-        if period < 20 { return 65 }
-        if period >= 20 { return 69 }
-        return 90
+    private func waveMarkerLength(for period: Double?) -> CGFloat {
+        guard let period else { return 24 }
+        let clamped = min(max(period, 5), 20)
+        let normalized = (clamped - 5) / 15
+        let eased = pow(normalized, 1.35)
+        return 14 + CGFloat(eased) * 62
+    }
+
+    private func waveMarkerWidth(for height: Double?) -> CGFloat {
+        guard let height else { return 20 }
+        let clamped = min(max(height, 1), 20)
+        let normalized = (clamped - 1) / 19
+        let eased = pow(normalized, 0.55)
+        return 14 + CGFloat(eased) * 32
     }
 
     func confirmHomeLocation() {
@@ -524,7 +521,8 @@ final class MapScreenViewModel: ObservableObject {
         let style = BuoyMarkerStyle(
             color: waveMarkerColor(for: observation.heightFeet),
             opacity: 0.9,
-            size: waveMarkerSize(for: observation.periodSeconds),
+            width: waveMarkerWidth(for: observation.heightFeet),
+            length: waveMarkerLength(for: observation.periodSeconds),
             direction: observation.directionDegrees ?? 0,
             whiteAtTop: whiteAtTop
         )

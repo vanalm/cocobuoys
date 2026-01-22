@@ -40,11 +40,21 @@ final class StationAnnotationView: MKAnnotationView {
         layer.addSublayer(markerLayer)
     }
     
-    private func trianglePath(width: CGFloat, height: CGFloat) -> CGPath {
+    private func waveArrowPath(size: CGSize) -> CGPath {
         let path = UIBezierPath()
-        path.move(to: CGPoint(x: width / 2, y: 0))
-        path.addLine(to: CGPoint(x: width, y: height))
-        path.addLine(to: CGPoint(x: 0, y: height))
+        let scaleX = size.width / 32
+        let scaleY = size.height / 32
+        let points = [
+            CGPoint(x: 16, y: 3),
+            CGPoint(x: 3, y: 29),
+            CGPoint(x: 16, y: 24),
+            CGPoint(x: 29, y: 29)
+        ]
+        guard let first = points.first else { return path.cgPath }
+        path.move(to: CGPoint(x: first.x * scaleX, y: first.y * scaleY))
+        for point in points.dropFirst() {
+            path.addLine(to: CGPoint(x: point.x * scaleX, y: point.y * scaleY))
+        }
         path.close()
         return path.cgPath
     }
@@ -57,20 +67,20 @@ final class StationAnnotationView: MKAnnotationView {
         if case let .wave(style) = stationAnnotation.kind {
             apply(style: style)
         } else {
-            apply(style: BuoyMarkerStyle(color: .blue, opacity: 0.9, size: 18, direction: 0, whiteAtTop: true))
+            apply(style: BuoyMarkerStyle(color: .blue, opacity: 0.9, width: 18, length: 28, direction: 0, whiteAtTop: true))
         }
     }
     
     private func apply(style: BuoyMarkerStyle) {
-        let width = style.size
-        let height = style.size * 1.4
-        let padding = max(4, style.size * 0.25)
+        let width = style.width
+        let height = style.length
+        let padding = max(4, max(width, height) * 0.2)
         bounds = CGRect(origin: .zero, size: CGSize(width: width + padding * 2, height: height + padding * 2))
         let contentFrame = bounds.insetBy(dx: padding, dy: padding)
         markerLayer.frame = contentFrame
         markerLayer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         markerLayer.position = CGPoint(x: bounds.midX, y: bounds.midY)
-        markerLayer.path = trianglePath(width: contentFrame.width, height: contentFrame.height)
+        markerLayer.path = waveArrowPath(size: contentFrame.size)
         markerLayer.fillColor = UIColor(style.color).cgColor
         markerLayer.opacity = Float(style.opacity)
         markerLayer.setAffineTransform(.identity)

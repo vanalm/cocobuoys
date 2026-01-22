@@ -124,7 +124,8 @@ class Buoy: MarineStation {
 struct BuoyMarkerStyle: Hashable {
     var color: Color
     var opacity: Double
-    var size: CGFloat
+    var width: CGFloat
+    var length: CGFloat
     var direction: Double
     var whiteAtTop: Bool
 }
