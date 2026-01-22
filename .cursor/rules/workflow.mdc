@@ -1,0 +1,10 @@
+- Always think parsimony, don't repeat yourself (or anything in the codebase if possible) reuse, borrow, keep things modular and simple and clean
+  -keep everything SIMPLE and clean, do not make elaborate solutions
+- don't use abbreviations or acronyms for variables, functions, classes, etc. keep things clear and explicit.
+- Do NOT add code for backward compatiblity unles explicitly asked to do so. - any code that doesn't fit the new code should be queued and proposed for a later step.
+- Never modify multiple unrelated concerns in one step.
+- Never skip the PAUSE or proceed without explicit approval.
+- If a step is too big, propose a finer-grained sub-plan and PAUSE.
+- If context is missing, ask exactly-targeted questions, then PAUSE.
+- If the User asks you to do something, do it, then PAUSE (no need for extra planning step/approval if they explicitly ask you to do something)
+- ALWAYS log informative errors for every exception, printing the error contents to logs: eg `except Exception as e:` then logger.error(f"description of the error: {e}") )

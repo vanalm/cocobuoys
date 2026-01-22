@@ -1,0 +1,61 @@
+{
+    "python.linting.enabled": true,
+    "python.linting.ruffEnabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": false,
+    "python.linting.mypyEnabled": false,
+    "python.linting.banditEnabled": false,
+    "python.linting.pycodestyleEnabled": false,
+    "python.linting.pydocstyleEnabled": false,
+    "python.linting.pylamaEnabled": false,
+    "python.linting.prospectorEnabled": false,
+    "python.linting.pylspEnabled": false,
+    "python.linting.pyrightEnabled": false,
+    "python.linting.spyderEnabled": false,
+    "python.linting.vultureEnabled": false,
+    "python.linting.xoEnabled": false,
+    "python.linting.yapfEnabled": false,
+    "python.linting.zapEnabled": false,
+    
+    // Disable built-in Python linting
+    "python.analysis.diagnosticMode": "off",
+    "python.analysis.typeCheckingMode": "off",
+    "python.analysis.autoImportCompletions": false,
+    "python.analysis.autoSearchPaths": false,
+    
+    // Disable Pylance/Pyright completely
+    "python.languageServer": "None",
+    "pylint.enabled": false,
+    "pylint.args": [],
+    "python.linting.ruffPath": "ruff",
+    "python.linting.ruffArgs": ["--config", "ruff.toml"],
+    "python.formatting.provider": "black",
+    "python.formatting.blackArgs": ["--line-length", "100"],
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": "explicit",
+        "source.fixAll.ruff": "explicit"
+    },
+    "ruff.path": ["ruff"],
+    "ruff.importStrategy": "fromEnvironment",
+    
+    // AI/Cursor specific settings to follow project rules
+    "cursor.cpp.disabledLanguages": [],
+    "cursor.general.enableCodeActions": true,
+    "cursor.general.enableAutoImport": true,
+    
+    // Python-specific AI guidance
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.autoSearchPaths": true,
+    
+    // Ensure consistent formatting
+    "editor.rulers": [100],
+    "editor.wordWrap": "wordWrapColumn",
+    "editor.wordWrapColumn": 100,
+    
+    // File associations
+    "files.associations": {
+        "*.py": "python"
+    }
+}
